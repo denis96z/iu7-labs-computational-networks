@@ -1,0 +1,25 @@
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+address 10.103.0.200
+netmask 255.255.0.0
+
+up ip r add 10.101.0.0/16 via 10.103.0.100 dev eth0
+down ip r del 10.101.0.0/16
+up ip r add 10.102.0.0/16 via 10.103.0.100 dev eth0
+down ip r del 10.102.0.0/16
+
+auto eth1
+iface eth1 inet static
+address 10.104.0.1
+netmask 255.255.0.0
+
+up ip r add 10.101.0.0/16 via 10.104.0.111 dev eth1
+down ip r del 10.101.0.0/16
+
+auto eth2
+iface eth2 inet static
+address 10.105.0.1
+netmask 255.255.0.0
