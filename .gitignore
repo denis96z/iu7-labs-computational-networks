@@ -1,3 +1,6 @@
 ### vm ###
 *.disk
 *.ready
+
+### vim ###
+tags

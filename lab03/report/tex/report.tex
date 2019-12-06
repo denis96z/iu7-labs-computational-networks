@@ -1,0 +1,591 @@
+\documentclass[a4paper,12pt]{article}
+
+\input{header.tex}
+
+\title{Отчёт по лабораторной работе \\ <<Механизмы протокола TCP>>}
+\author{Зиновьв Денис, ИУ7-32м}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Установка и разрыв соединения}
+
+Выполняем дамп на \textbf{c2} и \textbf{c3}.
+
+\begin{Verbatim}
+c1:~# telnet 10.50.0.2 9
+Trying 10.50.0.2...
+Connected to 10.50.0.2.
+Escape character is '^]'.
+str1
+str2
+^]
+telnet> close
+Connection closed.
+
+c2:~# tcpdump -ntvve -s 0 -i eth0 tcp
+tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 74: (tos 0x10, ttl 64, id 48045, offset 0, flags [DF], proto TCP (6), length 60) 10.10.0.2.35543 > 10.50.0.2.9: S, cksum 0x01a5 (correct), 3432951443:3432951443(0) win 5840 <mss 1460,sackOK,timestamp 70974 0,nop,wscale 1>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 61, id 0, offset 0, flags [DF], proto TCP (6), length 60) 10.50.0.2.9 > 10.10.0.2.35543: S, cksum 0xb891 (correct), 3423693694:3423693694(0) ack 3432951444 win 5792 <mss 536,sackOK,timestamp 70973 70974,nop,wscale 1>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 64, id 48046, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: ., cksum 0xeef3 (correct), 1:1(0) ack 1 win 2920 <nop,nop,timestamp 70974 70973>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 72: (tos 0x10, ttl 64, id 48047, offset 0, flags [DF], proto TCP (6), length 58) 10.10.0.2.35543 > 10.50.0.2.9: P, cksum 0xf6de (correct), 1:7(6) ack 1 win 2920 <nop,nop,timestamp 72341 70973>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 61, id 32322, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: ., cksum 0xe459 (correct), 1:1(0) ack 7 win 2896 <nop,nop,timestamp 72338 72341>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 72: (tos 0x10, ttl 64, id 48048, offset 0, flags [DF], proto TCP (6), length 58) 10.10.0.2.35543 > 10.50.0.2.9: P, cksum 0xefad (correct), 7:13(6) ack 1 win 2920 <nop,nop,timestamp 72810 72338>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 61, id 32323, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: ., cksum 0xe0a9 (correct), 1:1(0) ack 13 win 2896 <nop,nop,timestamp 72807 72810>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 64, id 48049, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: F, cksum 0xde74 (correct), 13:13(0) ack 1 win 2920 <nop,nop,timestamp 73350 72807>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 61, id 32324, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: F, cksum 0xdc6f (correct), 1:1(0) ack 14 win 2896 <nop,nop,timestamp 73347 73350>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 64, id 48050, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: ., cksum 0xdc57 (correct), 14:14(0) ack 2 win 2920 <nop,nop,timestamp 73350 73347>
+
+c3:~# tcpdump -ntvve -s 0 -i eth0 tcp
+tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+3a:89:27:18:b0:96 > f6:7d:1f:b9:80:77, ethertype IPv4 (0x0800), length 74: (tos 0x10, ttl 63, id 48045, offset 0, flags [DF], proto TCP (6), length 60) 10.10.0.2.35543 > 10.50.0.2.9: S, cksum 0x01a5 (correct), 3432951443:3432951443(0) win 5840 <mss 1460,sackOK,timestamp 70974 0,nop,wscale 1>
+f6:7d:1f:b9:80:77 > 3a:89:27:18:b0:96, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 62, id 0, offset 0, flags [DF], proto TCP (6), length 60) 10.50.0.2.9 > 10.10.0.2.35543: S, cksum 0xb891 (correct), 3423693694:3423693694(0) ack 3432951444 win 5792 <mss 536,sackOK,timestamp 70973 70974,nop,wscale 1>
+3a:89:27:18:b0:96 > f6:7d:1f:b9:80:77, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 63, id 48046, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: ., cksum 0xeef3 (correct), 1:1(0) ack 1 win 2920 <nop,nop,timestamp 70974 70973>
+3a:89:27:18:b0:96 > f6:7d:1f:b9:80:77, ethertype IPv4 (0x0800), length 72: (tos 0x10, ttl 63, id 48047, offset 0, flags [DF], proto TCP (6), length 58) 10.10.0.2.35543 > 10.50.0.2.9: P, cksum 0xf6de (correct), 1:7(6) ack 1 win 2920 <nop,nop,timestamp 72341 70973>
+f6:7d:1f:b9:80:77 > 3a:89:27:18:b0:96, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 32322, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: ., cksum 0xe459 (correct), 1:1(0) ack 7 win 2896 <nop,nop,timestamp 72338 72341>
+3a:89:27:18:b0:96 > f6:7d:1f:b9:80:77, ethertype IPv4 (0x0800), length 72: (tos 0x10, ttl 63, id 48048, offset 0, flags [DF], proto TCP (6), length 58) 10.10.0.2.35543 > 10.50.0.2.9: P, cksum 0xefad (correct), 7:13(6) ack 1 win 2920 <nop,nop,timestamp 72810 72338>
+f6:7d:1f:b9:80:77 > 3a:89:27:18:b0:96, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 32323, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: ., cksum 0xe0a9 (correct), 1:1(0) ack 13 win 2896 <nop,nop,timestamp 72807 72810>
+3a:89:27:18:b0:96 > f6:7d:1f:b9:80:77, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 63, id 48049, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: F, cksum 0xde74 (correct), 13:13(0) ack 1 win 2920 <nop,nop,timestamp 73350 72807>
+f6:7d:1f:b9:80:77 > 3a:89:27:18:b0:96, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 32324, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: F, cksum 0xdc6f (correct), 1:1(0) ack 14 win 2896 <nop,nop,timestamp 73347 73350>
+3a:89:27:18:b0:96 > f6:7d:1f:b9:80:77, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 63, id 48050, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: ., cksum 0xdc57 (correct), 14:14(0) ack 2 win 2920 <nop,nop,timestamp 73350 73347>
+\end{Verbatim}
+
+\section{Окно получателя}
+
+Выполняем tcpdump на \textbf{c2}.
+
+\begin{Verbatim}
+c2:~# tcpdump -ntvve -s 0 -i eth0 tcp
+tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 74: (tos 0x10, ttl 64, id 48045, offset 0, flags [DF], proto TCP (6), length 60) 10.10.0.2.35543 > 10.50.0.2.9: S, cksum 0x01a5 (correct), 3432951443:3432951443(0) win 5840 <mss 1460,sackOK,timestamp 70974 0,nop,wscale 1>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 61, id 0, offset 0, flags [DF], proto TCP (6), length 60) 10.50.0.2.9 > 10.10.0.2.35543: S, cksum 0xb891 (correct), 3423693694:3423693694(0) ack 3432951444 win 5792 <mss 536,sackOK,timestamp 70973 70974,nop,wscale 1>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 64, id 48046, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: ., cksum 0xeef3 (correct), 1:1(0) ack 1 win 2920 <nop,nop,timestamp 70974 70973>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 72: (tos 0x10, ttl 64, id 48047, offset 0, flags [DF], proto TCP (6), length 58) 10.10.0.2.35543 > 10.50.0.2.9: P, cksum 0xf6de (correct), 1:7(6) ack 1 win 2920 <nop,nop,timestamp 72341 70973>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 61, id 32322, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: ., cksum 0xe459 (correct), 1:1(0) ack 7 win 2896 <nop,nop,timestamp 72338 72341>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 72: (tos 0x10, ttl 64, id 48048, offset 0, flags [DF], proto TCP (6), length 58) 10.10.0.2.35543 > 10.50.0.2.9: P, cksum 0xefad (correct), 7:13(6) ack 1 win 2920 <nop,nop,timestamp 72810 72338>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 61, id 32323, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: ., cksum 0xe0a9 (correct), 1:1(0) ack 13 win 2896 <nop,nop,timestamp 72807 72810>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 64, id 48049, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: F, cksum 0xde74 (correct), 13:13(0) ack 1 win 2920 <nop,nop,timestamp 73350 72807>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 61, id 32324, offset 0, flags [DF], proto TCP (6), length 52) 10.50.0.2.9 > 10.10.0.2.35543: F, cksum 0xdc6f (correct), 1:1(0) ack 14 win 2896 <nop,nop,timestamp 73347 73350>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x10, ttl 64, id 48050, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.35543 > 10.50.0.2.9: ., cksum 0xdc57 (correct), 14:14(0) ack 2 win 2920 <nop,nop,timestamp 73350 73347>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 64, id 64696, offset 0, flags [DF], proto TCP (6), length 60) 10.10.0.2.45146 > 10.30.0.2.3002: S, cksum 0xe803 (correct), 1974352885:1974352885(0) win 5840 <mss 1460,sackOK,timestamp 116557 0,nop,wscale 1>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 74: (tos 0x0, ttl 62, id 0, offset 0, flags [DF], proto TCP (6), length 60) 10.30.0.2.3002 > 10.10.0.2.45146: S, cksum 0xf2a4 (correct), 1974782607:1974782607(0) ack 1974352886 win 2096 <mss 536,sackOK,timestamp 116548 116557,nop,wscale 1>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 64697, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x1a92 (correct), 1:1(0) ack 1 win 2920 <nop,nop,timestamp 116562 116548>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64698, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x1886 (correct), 1:525(524) ack 1 win 2920 <nop,nop,timestamp 116562 116548>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64699, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x167a (correct), 525:1049(524) ack 1 win 2920 <nop,nop,timestamp 116562 116548>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3542, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x1dc8 (correct), 1:1(0) ack 525 win 1572 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3543, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x19b0 (correct), 1:1(0) ack 1049 win 2096 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64700, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0x1464 (correct), 1049:1573(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64701, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x1260 (correct), 1573:2097(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64702, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x1054 (correct), 2097:2621(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64703, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0x0e40 (correct), 2621:3145(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3544, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x1598 (correct), 1:1(0) ack 1573 win 2620 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3545, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x1180 (correct), 1:1(0) ack 2097 win 3144 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3546, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x0d68 (correct), 1:1(0) ack 2621 win 3668 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3547, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x0950 (correct), 1:1(0) ack 3145 win 4192 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64704, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0c3c (correct), 3145:3669(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64705, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0a30 (correct), 3669:4193(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64706, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0x081c (correct), 4193:4717(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64707, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0618 (correct), 4717:5241(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64708, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x040c (correct), 5241:5765(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64709, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0x01f8 (correct), 5765:6289(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64710, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xfff3 (correct), 6289:6813(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64711, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xfde7 (correct), 6813:7337(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3548, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x0538 (correct), 1:1(0) ack 3669 win 4716 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3549, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x0120 (correct), 1:1(0) ack 4193 win 5240 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64712, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0xfbd3 (correct), 7337:7861(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64713, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf9cf (correct), 7861:8385(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3550, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xfd07 (correct), 1:1(0) ack 4717 win 5764 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64714, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf7c3 (correct), 8385:8909(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64715, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0xf5af (correct), 8909:9433(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64716, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf3ab (correct), 9433:9957(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64717, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf19f (correct), 9957:10481(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3551, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf8ef (correct), 1:1(0) ack 5241 win 6288 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3552, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf4d7 (correct), 1:1(0) ack 5765 win 6812 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3553, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf0bf (correct), 1:1(0) ack 6289 win 7336 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3554, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xeca7 (correct), 1:1(0) ack 6813 win 7860 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3555, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xe88f (correct), 1:1(0) ack 7337 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64718, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xef93 (correct), 10481:11005(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64719, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xed87 (correct), 11005:11529(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64720, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xeb7b (correct), 11529:12053(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64721, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe96f (correct), 12053:12577(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64722, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe763 (correct), 12577:13101(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3556, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xe683 (correct), 1:1(0) ack 7861 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64723, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0xe54f (correct), 13101:13625(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64724, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe34b (correct), 13625:14149(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64725, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe13f (correct), 14149:14673(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64726, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xdf33 (correct), 14673:15197(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64727, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xdd27 (correct), 15197:15721(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3557, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xe477 (correct), 1:1(0) ack 8385 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3558, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xe05f (correct), 1:1(0) ack 9433 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3559, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xdc47 (correct), 1:1(0) ack 10481 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64728, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xdb1b (correct), 15721:16245(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64729, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xd90f (correct), 16245:16769(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64730, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xd703 (correct), 16769:17293(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64731, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xd4f7 (correct), 17293:17817(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64732, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xd2eb (correct), 17817:18341(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64733, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xd0df (correct), 18341:18865(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64734, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xced3 (correct), 18865:19389(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64735, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xccc7 (correct), 19389:19913(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64736, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xcabb (correct), 19913:20437(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64737, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xc8af (correct), 20437:20961(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3560, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xd82f (correct), 1:1(0) ack 11529 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3561, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xd417 (correct), 1:1(0) ack 12577 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3562, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xcfff (correct), 1:1(0) ack 13625 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3563, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xcbe7 (correct), 1:1(0) ack 14673 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64738, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xc6a3 (correct), 20961:21485(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64739, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xc497 (correct), 21485:22009(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3564, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xc7cf (correct), 1:1(0) ack 15721 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3565, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xc3b7 (correct), 1:1(0) ack 16769 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64740, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xc28b (correct), 22009:22533(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64741, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0xc077 (correct), 22533:23057(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3566, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xbf9f (correct), 1:1(0) ack 17817 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64742, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xbe73 (correct), 23057:23581(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64743, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xbc67 (correct), 23581:24105(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3567, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xbb87 (correct), 1:1(0) ack 18865 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 538: (tos 0x0, ttl 64, id 64744, offset 0, flags [DF], proto TCP (6), length 524) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0xba87 (correct), 24105:24577(472) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64745, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xb883 (correct), 24577:25101(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64746, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xb677 (correct), 25101:25625(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64747, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xb46b (correct), 25625:26149(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64748, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xb25f (correct), 26149:26673(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64749, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xb053 (correct), 26673:27197(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64750, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xae47 (correct), 27197:27721(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64751, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xac3b (correct), 27721:28245(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64752, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xaa2f (correct), 28245:28769(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64753, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xa823 (correct), 28769:29293(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64754, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xa617 (correct), 29293:29817(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64755, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xa40b (correct), 29817:30341(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64756, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xa1ff (correct), 30341:30865(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64757, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x9ff3 (correct), 30865:31389(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3568, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xaa3b (correct), 1:1(0) ack 27721 win 3956 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3569, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xa935 (correct), 1:1(0) ack 28245 win 3694 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64758, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x9de7 (correct), 31389:31913(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64759, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x9bdb (correct), 31913:32437(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3570, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xa82f (correct), 1:1(0) ack 28769 win 3432 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3571, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xa729 (correct), 1:1(0) ack 29293 win 3170 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3572, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xa537 (correct), 1:1(0) ack 29817 win 3144 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3573, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xa11f (correct), 1:1(0) ack 30341 win 3668 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3574, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x9d07 (correct), 1:1(0) ack 30865 win 4192 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3575, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x98ef (correct), 1:1(0) ack 31389 win 4716 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64760, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x99cf (correct), 32437:32961(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64761, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x97c3 (correct), 32961:33485(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64762, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x95b7 (correct), 33485:34009(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64763, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x93ab (correct), 34009:34533(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64764, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x919f (correct), 34533:35057(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64765, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x8f93 (correct), 35057:35581(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64766, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x8d87 (correct), 35581:36105(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64767, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x8b7b (correct), 36105:36629(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64768, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x896f (correct), 36629:37153(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64769, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x8763 (correct), 37153:37677(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64770, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x8557 (correct), 37677:38201(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64771, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x834b (correct), 38201:38725(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64772, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x813f (correct), 38725:39249(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64773, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x7f33 (correct), 39249:39773(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64774, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x7d27 (correct), 39773:40297(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64775, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0x7b13 (correct), 40297:40821(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3576, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x94d7 (correct), 1:1(0) ack 31913 win 5240 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64776, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x790f (correct), 40821:41345(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64777, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x7703 (correct), 41345:41869(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64778, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x74f7 (correct), 41869:42393(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3577, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x90bf (correct), 1:1(0) ack 32437 win 5764 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3578, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x8ca7 (correct), 1:1(0) ack 32961 win 6288 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3579, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x888f (correct), 1:1(0) ack 33485 win 6812 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3580, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x8477 (correct), 1:1(0) ack 34009 win 7336 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3581, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x805f (correct), 1:1(0) ack 34533 win 7860 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3582, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x7c47 (correct), 1:1(0) ack 35057 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3583, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x782f (correct), 1:1(0) ack 36105 win 8384 <nop,nop,timestamp 116550 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3584, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x7417 (correct), 1:1(0) ack 37153 win 8384 <nop,nop,timestamp 116550 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64779, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x72eb (correct), 42393:42917(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64780, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x70df (correct), 42917:43441(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64781, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x6ed3 (correct), 43441:43965(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64782, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x6cc7 (correct), 43965:44489(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64783, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x6abb (correct), 44489:45013(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64784, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x68af (correct), 45013:45537(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64785, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x66a3 (correct), 45537:46061(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64786, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x6497 (correct), 46061:46585(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64787, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x628b (correct), 46585:47109(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64788, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x607f (correct), 47109:47633(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64789, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x5e73 (correct), 47633:48157(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64790, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x5c67 (correct), 48157:48681(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64791, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x5a5b (correct), 48681:49205(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64792, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x584f (correct), 49205:49729(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64793, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x5643 (correct), 49729:50253(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64794, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x5437 (correct), 50253:50777(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64795, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x522b (correct), 50777:51301(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64796, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x501f (correct), 51301:51825(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64797, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x4e13 (correct), 51825:52349(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64798, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x4c07 (correct), 52349:52873(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64799, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x49fb (correct), 52873:53397(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64800, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x47ef (correct), 53397:53921(524) ack 1 win 2920 <nop,nop,timestamp 116562 116550>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3585, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x433d (correct), 1:1(0) ack 53921 win 4118 <nop,nop,timestamp 116554 116562>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64801, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x45db (correct), 53921:54445(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64802, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x43cf (correct), 54445:54969(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64803, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x41c3 (correct), 54969:55493(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64804, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x3fb7 (correct), 55493:56017(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64805, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x3dab (correct), 56017:56541(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64806, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x3b9f (correct), 56541:57065(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64807, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0x398b (correct), 57065:57589(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64808, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x3787 (correct), 57589:58113(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64809, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x357b (correct), 58113:58637(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64810, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x336f (correct), 58637:59161(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64811, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x3163 (correct), 59161:59685(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64812, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x2f57 (correct), 59685:60209(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64813, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x2d4b (correct), 60209:60733(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64814, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x2b3f (correct), 60733:61257(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64815, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x2933 (correct), 61257:61781(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3586, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x243b (correct), 1:1(0) ack 61781 win 4192 <nop,nop,timestamp 116554 116566>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64816, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x2727 (correct), 61781:62305(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64817, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x251b (correct), 62305:62829(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64818, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x230f (correct), 62829:63353(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64819, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x2103 (correct), 63353:63877(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64820, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x1ef7 (correct), 63877:64401(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64821, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x1ceb (correct), 64401:64925(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64822, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x1adf (correct), 64925:65449(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64823, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x18d3 (correct), 65449:65973(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64824, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x16c7 (correct), 65973:66497(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64825, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x14bb (correct), 66497:67021(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64826, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x12af (correct), 67021:67545(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64827, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x10a3 (correct), 67545:68069(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64828, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0e97 (correct), 68069:68593(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64829, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0c8b (correct), 68593:69117(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64830, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0a7f (correct), 69117:69641(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64831, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0873 (correct), 69641:70165(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3587, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x21ef (correct), 1:1(0) ack 62305 win 4256 <nop,nop,timestamp 116554 116566>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64832, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0667 (correct), 70165:70689(524) ack 1 win 2920 <nop,nop,timestamp 116566 116554>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3588, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x0eb1 (correct), 1:1(0) ack 70689 win 794 <nop,nop,timestamp 116558 116566>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64833, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0453 (correct), 70689:71213(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64834, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x0247 (correct), 71213:71737(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64835, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0x003b (correct), 71737:72261(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3589, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x078b (correct), 1:1(0) ack 72261 win 1048 <nop,nop,timestamp 116558 116570>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64836, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xfe2e (correct), 72261:72785(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64837, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xfc22 (correct), 72785:73309(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64838, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xfa16 (correct), 73309:73833(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64839, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf80a (correct), 73833:74357(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3590, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0x0373 (correct), 1:1(0) ack 72785 win 1572 <nop,nop,timestamp 116558 116570>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3591, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xffd8 (correct), 1:1(0) ack 73309 win 1970 <nop,nop,timestamp 116558 116570>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64840, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf5fe (correct), 74357:74881(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64841, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf3f2 (correct), 74881:75405(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64842, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xf1e6 (correct), 75405:75929(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64843, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xefda (correct), 75929:76453(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64844, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xedce (correct), 76453:76977(524) ack 1 win 2920 <nop,nop,timestamp 116570 116558>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3592, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf762 (correct), 1:1(0) ack 76977 win 464 <nop,nop,timestamp 116562 116570>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64845, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xebba (correct), 76977:77501(524) ack 1 win 2920 <nop,nop,timestamp 116574 116562>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3593, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf654 (correct), 1:1(0) ack 77501 win 202 <nop,nop,timestamp 116566 116574>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 470: (tos 0x0, ttl 64, id 64846, offset 0, flags [DF], proto TCP (6), length 456) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0xea00 (correct), 77501:77905(404) ack 1 win 2920 <nop,nop,timestamp 116600 116566>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3594, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf55b (correct), 1:1(0) ack 77905 win 0 <nop,nop,timestamp 116587 116600>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 64847, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe9de (correct), 77904:77904(0) ack 1 win 2920 <nop,nop,timestamp 116622 116587>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3595, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf545 (correct), 1:1(0) ack 77905 win 0 <nop,nop,timestamp 116609 116600>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 64848, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe99c (correct), 77904:77904(0) ack 1 win 2920 <nop,nop,timestamp 116666 116609>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3596, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf519 (correct), 1:1(0) ack 77905 win 0 <nop,nop,timestamp 116653 116600>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 64849, offset 0, flags [DF], proto TCP (6), length 52) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe918 (correct), 77904:77904(0) ack 1 win 2920 <nop,nop,timestamp 116754 116653>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3597, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf4c1 (correct), 1:1(0) ack 77905 win 0 <nop,nop,timestamp 116741 116600>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3598, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xf20a (correct), 1:1(0) ack 77905 win 686 <nop,nop,timestamp 116750 116600>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 186: (tos 0x0, ttl 64, id 64850, offset 0, flags [DF], proto TCP (6), length 172) 10.10.0.2.45146 > 10.30.0.2.3002: P, cksum 0xe82e (correct), 77905:78025(120) ack 1 win 2920 <nop,nop,timestamp 116762 116750>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64851, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe62a (correct), 78025:78549(524) ack 1 win 2920 <nop,nop,timestamp 116762 116750>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64852, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe41e (correct), 78549:79073(524) ack 1 win 2920 <nop,nop,timestamp 116762 116750>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3599, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xee94 (correct), 1:1(0) ack 77905 win 1572 <nop,nop,timestamp 116750 116600>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64853, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe212 (correct), 79073:79597(524) ack 1 win 2920 <nop,nop,timestamp 116762 116750>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3600, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: ., cksum 0xed90 (correct), 1:1(0) ack 78025 win 1550 <nop,nop,timestamp 116750 116762>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64854, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xe006 (correct), 79597:80121(524) ack 1 win 2920 <nop,nop,timestamp 116762 116750>
+ee:40:19:05:85:e9 > f2:3b:18:36:f3:fd, ethertype IPv4 (0x0800), length 590: (tos 0x0, ttl 64, id 64855, offset 0, flags [DF], proto TCP (6), length 576) 10.10.0.2.45146 > 10.30.0.2.3002: ., cksum 0xddfa (correct), 80121:80645(524) ack 1 win 2920 <nop,nop,timestamp 116762 116750>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 62, id 3601, offset 0, flags [DF], proto TCP (6), length 52) 10.30.0.2.3002 > 10.10.0.2.45146: R, cksum 0xe752 (correct), 1:1(0) ack 79597 win 1572 <nop,nop,timestamp 116750 116762>
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 54: (tos 0x0, ttl 62, id 0, offset 0, flags [DF], proto TCP (6), length 40) 10.30.0.2.3002 > 10.10.0.2.45146: R, cksum 0x9f5b (correct), 1974782608:1974782608(0) win 0
+f2:3b:18:36:f3:fd > ee:40:19:05:85:e9, ethertype IPv4 (0x0800), length 54: (tos 0x0, ttl 62, id 0, offset 0, flags [DF], proto TCP (6), length 40) 10.30.0.2.3002 > 10.10.0.2.45146: R, cksum 0x9f5b (correct), 1974782608:1974782608(0) win 0
+\end{Verbatim}
+
+\section{Нейгл и Мишналь}
+
+Алгоритм Нейгла. Выполняем tcpdump на \textbf{c2}.
+
+\begin{Verbatim}
+c1:~# ./nagle default 10.40.0.2 9 0 30
+
+c2:~# tcpdump -n -i eth0 tcp
+09:06:22.298749 IP 10.10.0.2.50582 > 10.40.0.2.9: S 294711968:294711968(0) win 5840 <mss 1460,sackOK,timestamp 4294961573 0,nop,wscale 1>
+09:06:22.524819 IP 10.40.0.2.9 > 10.10.0.2.50582: S 303159576:303159576(0) ack 294711969 win 5792 <mss 1460,sackOK,timestamp 4294961440 4294961573,nop,wscale 1>
+09:06:22.525049 IP 10.10.0.2.50582 > 10.40.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 4294961596 4294961440>
+09:06:22.525155 IP 10.10.0.2.50582 > 10.40.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 4294961596 4294961440>
+09:06:22.624498 IP 10.10.0.2.50582 > 10.40.0.2.9: . 101:1549(1448) ack 1 win 2920 <nop,nop,timestamp 4294961606 4294961440>
+09:06:22.634944 IP 10.40.0.2.9 > 10.10.0.2.50582: . ack 101 win 2896 <nop,nop,timestamp 4294961451 4294961596>
+09:06:22.635237 IP 10.10.0.2.50582 > 10.40.0.2.9: P 1549:1701(152) ack 1 win 2920 <nop,nop,timestamp 4294961608 4294961451>
+09:06:22.734774 IP 10.40.0.2.9 > 10.10.0.2.50582: . ack 1549 win 4344 <nop,nop,timestamp 4294961461 4294961606>
+09:06:22.735302 IP 10.10.0.2.50582 > 10.40.0.2.9: FP 1701:3001(1300) ack 1 win 2920 <nop,nop,timestamp 4294961618 4294961461>
+09:06:22.747689 IP 10.40.0.2.9 > 10.10.0.2.50582: . ack 1701 win 4344 <nop,nop,timestamp 4294961462 4294961608>
+09:06:22.844708 IP 10.40.0.2.9 > 10.10.0.2.50582: F 1:1(0) ack 3002 win 5792 <nop,nop,timestamp 4294961472 4294961618>
+09:06:22.845000 IP 10.10.0.2.50582 > 10.40.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 4294961628 4294961472
+
+c1:~# ./nagle default 10.40.0.2 9 20 30
+
+c2:~# tcpdump -n -i eth0 tcp
+10:40:37.725592 IP 10.10.0.2.60936 > 10.40.0.2.9: S 2777469580:2777469580(0) win 5840 <mss 1460,sackOK,timestamp 4243 0,nop,wscale 1>
+10:40:37.833831 IP 10.40.0.2.9 > 10.10.0.2.60936: S 2776945976:2776945976(0) ack 2777469581 win 5792 <mss 1460,sackOK,timestamp 222 4243,nop,wscale 1>
+10:40:37.834065 IP 10.10.0.2.60936 > 10.40.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 4255 222>
+10:40:37.834181 IP 10.10.0.2.60936 > 10.40.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 4255 222>
+10:40:37.943783 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 101 win 2896 <nop,nop,timestamp 233 4255>
+10:40:37.943960 IP 10.10.0.2.60936 > 10.40.0.2.9: P 101:501(400) ack 1 win 2920 <nop,nop,timestamp 4266 233>
+10:40:38.053809 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 501 win 3432 <nop,nop,timestamp 244 4266>
+10:40:38.054046 IP 10.10.0.2.60936 > 10.40.0.2.9: P 501:801(300) ack 1 win 2920 <nop,nop,timestamp 4277 244>
+10:40:38.163966 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 801 win 3968 <nop,nop,timestamp 255 4277>
+10:40:38.164364 IP 10.10.0.2.60936 > 10.40.0.2.9: P 801:1201(400) ack 1 win 2920 <nop,nop,timestamp 4288 255>
+10:40:38.273805 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 1201 win 4504 <nop,nop,timestamp 266 4288>
+10:40:38.273953 IP 10.10.0.2.60936 > 10.40.0.2.9: P 1201:1601(400) ack 1 win 2920 <nop,nop,timestamp 4299 266>
+10:40:38.383750 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 1601 win 5040 <nop,nop,timestamp 277 4299>
+10:40:38.383939 IP 10.10.0.2.60936 > 10.40.0.2.9: P 1601:1901(300) ack 1 win 2920 <nop,nop,timestamp 4310 277>
+10:40:38.493990 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 1901 win 5040 <nop,nop,timestamp 288 4310>
+10:40:38.494463 IP 10.10.0.2.60936 > 10.40.0.2.9: P 1901:2301(400) ack 1 win 2920 <nop,nop,timestamp 4321 288>
+10:40:38.603895 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 2301 win 5576 <nop,nop,timestamp 299 4321>
+10:40:38.604180 IP 10.10.0.2.60936 > 10.40.0.2.9: P 2301:2701(400) ack 1 win 2920 <nop,nop,timestamp 4332 299>
+10:40:38.713980 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 2701 win 6112 <nop,nop,timestamp 310 4332>
+10:40:38.714320 IP 10.10.0.2.60936 > 10.40.0.2.9: P 2701:3001(300) ack 1 win 2920 <nop,nop,timestamp 4343 310>
+10:40:38.724261 IP 10.10.0.2.60936 > 10.40.0.2.9: F 3001:3001(0) ack 1 win 2920 <nop,nop,timestamp 4344 310>
+10:40:38.823685 IP 10.40.0.2.9 > 10.10.0.2.60936: . ack 3001 win 6112 <nop,nop,timestamp 321 4343>
+10:40:38.833830 IP 10.40.0.2.9 > 10.10.0.2.60936: F 1:1(0) ack 3002 win 6112 <nop,nop,timestamp 322 4344>
+10:40:38.833945 IP 10.10.0.2.60936 > 10.40.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 4355 322>
+\end{Verbatim}
+
+\section{Аггрессивная буферизация}
+
+CORK. Выполняем tcpdump на \textbf{c2}.
+
+\begin{Verbatim}
+c1:~# ./nagle cork 10.40.0.2 9 400 30
+
+c2:~# tcpdump -n -i eth0 tcp
+10:45:00.513664 IP 10.10.0.2.49250 > 10.40.0.2.9: S 2598291440:2598291440(0) win 5840 <mss 1460,sackOK,timestamp 30521 0,nop,wscale 1>
+10:45:00.623714 IP 10.40.0.2.9 > 10.10.0.2.49250: S 2582813027:2582813027(0) ack 2598291441 win 5792 <mss 1460,sackOK,timestamp 26501 30521,nop,wscale 1>
+10:45:00.623829 IP 10.10.0.2.49250 > 10.40.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 30534 26501>
+10:45:01.353561 IP 10.10.0.2.49250 > 10.40.0.2.9: P 1:201(200) ack 1 win 2920 <nop,nop,timestamp 30607 26501>
+10:45:01.463902 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 201 win 3432 <nop,nop,timestamp 26585 30607>
+10:45:02.183567 IP 10.10.0.2.49250 > 10.40.0.2.9: P 201:401(200) ack 1 win 2920 <nop,nop,timestamp 30690 26585>
+10:45:02.293990 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 401 win 3968 <nop,nop,timestamp 26668 30690>
+10:45:02.973640 IP 10.10.0.2.49250 > 10.40.0.2.9: P 401:601(200) ack 1 win 2920 <nop,nop,timestamp 30769 26668>
+10:45:03.083924 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 601 win 4504 <nop,nop,timestamp 26747 30769>
+10:45:03.733628 IP 10.10.0.2.49250 > 10.40.0.2.9: P 601:801(200) ack 1 win 2920 <nop,nop,timestamp 30845 26747>
+10:45:03.843729 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 801 win 4504 <nop,nop,timestamp 26823 30845>
+10:45:04.493621 IP 10.10.0.2.49250 > 10.40.0.2.9: P 801:1001(200) ack 1 win 2920 <nop,nop,timestamp 30921 26823>
+10:45:04.603907 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 1001 win 4504 <nop,nop,timestamp 26899 30921>
+10:45:05.253624 IP 10.10.0.2.49250 > 10.40.0.2.9: P 1001:1201(200) ack 1 win 2920 <nop,nop,timestamp 30997 26899>
+10:45:05.363790 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 1201 win 4504 <nop,nop,timestamp 26975 30997>
+10:45:06.033548 IP 10.10.0.2.49250 > 10.40.0.2.9: P 1201:1401(200) ack 1 win 2920 <nop,nop,timestamp 31075 26975>
+10:45:06.143751 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 1401 win 4504 <nop,nop,timestamp 27053 31075>
+10:45:06.823751 IP 10.10.0.2.49250 > 10.40.0.2.9: P 1401:1601(200) ack 1 win 2920 <nop,nop,timestamp 31154 27053>
+10:45:06.933692 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 1601 win 4504 <nop,nop,timestamp 27132 31154>
+10:45:07.593615 IP 10.10.0.2.49250 > 10.40.0.2.9: P 1601:1801(200) ack 1 win 2920 <nop,nop,timestamp 31231 27132>
+10:45:07.703763 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 1801 win 4504 <nop,nop,timestamp 27209 31231>
+10:45:08.383876 IP 10.10.0.2.49250 > 10.40.0.2.9: P 1801:2001(200) ack 1 win 2920 <nop,nop,timestamp 31310 27209>
+10:45:08.493702 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 2001 win 4504 <nop,nop,timestamp 27288 31310>
+10:45:09.183485 IP 10.10.0.2.49250 > 10.40.0.2.9: P 2001:2101(100) ack 1 win 2920 <nop,nop,timestamp 31390 27288>
+10:45:09.293797 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 2101 win 4504 <nop,nop,timestamp 27367 31390>
+10:45:09.683558 IP 10.10.0.2.49250 > 10.40.0.2.9: P 2101:2301(200) ack 1 win 2920 <nop,nop,timestamp 31440 27367>
+10:45:09.793765 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 2301 win 4504 <nop,nop,timestamp 27418 31440>
+10:45:10.383620 IP 10.10.0.2.49250 > 10.40.0.2.9: P 2301:2401(100) ack 1 win 2920 <nop,nop,timestamp 31510 27418>
+10:45:10.493716 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 2401 win 4504 <nop,nop,timestamp 27488 31510>
+10:45:10.853693 IP 10.10.0.2.49250 > 10.40.0.2.9: P 2401:2601(200) ack 1 win 2920 <nop,nop,timestamp 31557 27488>
+10:45:10.963797 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 2601 win 4504 <nop,nop,timestamp 27535 31557>
+10:45:11.583594 IP 10.10.0.2.49250 > 10.40.0.2.9: P 2601:2701(100) ack 1 win 2920 <nop,nop,timestamp 31630 27535>
+10:45:11.693824 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 2701 win 4504 <nop,nop,timestamp 27608 31630>
+10:45:12.043745 IP 10.10.0.2.49250 > 10.40.0.2.9: P 2701:2801(100) ack 1 win 2920 <nop,nop,timestamp 31676 27608>
+10:45:12.153821 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 2801 win 4504 <nop,nop,timestamp 27654 31676>
+10:45:12.503568 IP 10.10.0.2.49250 > 10.40.0.2.9: P 2801:3001(200) ack 1 win 2920 <nop,nop,timestamp 31722 27654>
+10:45:12.613802 IP 10.40.0.2.9 > 10.10.0.2.49250: . ack 3001 win 4504 <nop,nop,timestamp 27700 31722>
+10:45:12.874657 IP 10.10.0.2.49250 > 10.40.0.2.9: F 3001:3001(0) ack 1 win 2920 <nop,nop,timestamp 31759 27700>
+10:45:12.983808 IP 10.40.0.2.9 > 10.10.0.2.49250: F 1:1(0) ack 3002 win 4504 <nop,nop,timestamp 27737 31759>
+10:45:12.984026 IP 10.10.0.2.49250 > 10.40.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 31770 27737>
+\end{Verbatim}
+
+\section{Отправка без задержки}
+
+Где что дампим.  Дампить без -t обязательно!
+
+\begin{Verbatim}
+c1:~# ./nagle nodelay 10.40.0.2 9 0 30
+
+c2:~# tcpdump -n -i eth0 tcp
+10:48:10.282414 IP 10.10.0.2.49251 > 10.40.0.2.9: S 1282506011:1282506011(0) win 5840 <mss 1460,sackOK,timestamp 49498 0,nop,wscale 1>
+10:48:10.383733 IP 10.40.0.2.9 > 10.10.0.2.49251: S 1267588748:1267588748(0) ack 1282506012 win 5792 <mss 1460,sackOK,timestamp 45477 49498,nop,wscale 1>
+10:48:10.383911 IP 10.10.0.2.49251 > 10.40.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 49510 45477>
+10:48:10.383994 IP 10.10.0.2.49251 > 10.40.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 49510 45477>
+10:48:10.393370 IP 10.10.0.2.49251 > 10.40.0.2.9: P 101:201(100) ack 1 win 2920 <nop,nop,timestamp 49511 45477>
+10:48:10.393415 IP 10.10.0.2.49251 > 10.40.0.2.9: P 201:301(100) ack 1 win 2920 <nop,nop,timestamp 49511 45477>
+10:48:10.493774 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 101 win 2896 <nop,nop,timestamp 45488 49510>
+10:48:10.493783 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 201 win 2896 <nop,nop,timestamp 45488 49511>
+10:48:10.493786 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 301 win 2896 <nop,nop,timestamp 45488 49511>
+10:48:10.493930 IP 10.10.0.2.49251 > 10.40.0.2.9: P 301:1501(1200) ack 1 win 2920 <nop,nop,timestamp 49521 45488>
+10:48:10.504030 IP 10.10.0.2.49251 > 10.40.0.2.9: P 1501:1601(100) ack 1 win 2920 <nop,nop,timestamp 49522 45488>
+10:48:10.513677 IP 10.10.0.2.49251 > 10.40.0.2.9: P 1601:1701(100) ack 1 win 2920 <nop,nop,timestamp 49523 45488>
+10:48:10.513879 IP 10.10.0.2.49251 > 10.40.0.2.9: P 1701:1801(100) ack 1 win 2920 <nop,nop,timestamp 49523 45488>
+10:48:10.523627 IP 10.10.0.2.49251 > 10.40.0.2.9: P 1801:1901(100) ack 1 win 2920 <nop,nop,timestamp 49524 45488>
+10:48:10.523846 IP 10.10.0.2.49251 > 10.40.0.2.9: P 1901:2001(100) ack 1 win 2920 <nop,nop,timestamp 49524 45488>
+10:48:10.584237 IP 10.10.0.2.49251 > 10.40.0.2.9: FP 2001:3001(1000) ack 1 win 2920 <nop,nop,timestamp 49530 45488>
+10:48:10.595707 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 1501 win 4096 <nop,nop,timestamp 45499 49521>
+10:48:10.613741 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 1601 win 4096 <nop,nop,timestamp 45501 49522>
+10:48:10.623782 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 1701 win 4096 <nop,nop,timestamp 45501 49523>
+10:48:10.623813 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 1801 win 4096 <nop,nop,timestamp 45501 49523>
+10:48:10.633790 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 1901 win 4096 <nop,nop,timestamp 45502 49524>
+10:48:10.633825 IP 10.40.0.2.9 > 10.10.0.2.49251: . ack 2001 win 4096 <nop,nop,timestamp 45502 49524>
+10:48:10.693733 IP 10.40.0.2.9 > 10.10.0.2.49251: F 1:1(0) ack 3002 win 5296 <nop,nop,timestamp 45508 49530>
+10:48:10.693886 IP 10.10.0.2.49251 > 10.40.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 49541 45508>
+
+c1:~# ./nagle nodelay 10.40.0.2 9 -1 30
+
+c2:~# tcpdump -n -i eth0 tcp
+10:49:45.258647 IP 10.10.0.2.49252 > 10.40.0.2.9: S 2758866196:2758866196(0) win 5840 <mss 1460,sackOK,timestamp 58997 0,nop,wscale 1>
+10:49:45.363705 IP 10.40.0.2.9 > 10.10.0.2.49252: S 2758798267:2758798267(0) ack 2758866197 win 5792 <mss 1460,sackOK,timestamp 54975 58997,nop,wscale 1>
+10:49:45.363841 IP 10.10.0.2.49252 > 10.40.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 59008 54975>
+10:49:45.363892 IP 10.10.0.2.49252 > 10.40.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 59008 54975>
+10:49:45.363929 IP 10.10.0.2.49252 > 10.40.0.2.9: P 101:201(100) ack 1 win 2920 <nop,nop,timestamp 59008 54975>
+10:49:45.363941 IP 10.10.0.2.49252 > 10.40.0.2.9: P 201:301(100) ack 1 win 2920 <nop,nop,timestamp 59008 54975>
+10:49:45.473891 IP 10.40.0.2.9 > 10.10.0.2.49252: . ack 101 win 2896 <nop,nop,timestamp 54986 59008>
+10:49:45.473900 IP 10.40.0.2.9 > 10.10.0.2.49252: . ack 201 win 2896 <nop,nop,timestamp 54986 59008>
+10:49:45.473902 IP 10.40.0.2.9 > 10.10.0.2.49252: . ack 301 win 2896 <nop,nop,timestamp 54986 59008>
+10:49:45.474118 IP 10.10.0.2.49252 > 10.40.0.2.9: . 301:1749(1448) ack 1 win 2920 <nop,nop,timestamp 59019 54986>
+10:49:45.474126 IP 10.10.0.2.49252 > 10.40.0.2.9: FP 1749:3001(1252) ack 1 win 2920 <nop,nop,timestamp 59019 54986>
+10:49:45.583747 IP 10.40.0.2.9 > 10.10.0.2.49252: . ack 1749 win 4344 <nop,nop,timestamp 54997 59019>
+10:49:45.583756 IP 10.40.0.2.9 > 10.10.0.2.49252: F 1:1(0) ack 3002 win 5792 <nop,nop,timestamp 54997 59019>
+10:49:45.583883 IP 10.10.0.2.49252 > 10.40.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 59030 54997>
+\end{Verbatim}
+
+\section{Быстрый повтор}
+
+tcpdump на \textbf{c1}.
+
+\begin{Verbatim}
+c1:~# tcpdump -n -i eth0 tcp
+10:56:18.994443 IP 10.10.0.2.40029 > 10.30.0.2.9: S 362578965:362578965(0) win 5840 <mss 1460,sackOK,timestamp 98371 0,nop,wscale 1>
+10:56:21.965055 IP 10.10.0.2.40029 > 10.30.0.2.9: S 362578965:362578965(0) win 5840 <mss 1460,sackOK,timestamp 98671 0,nop,wscale 1>
+10:56:21.976394 IP 10.30.0.2.9 > 10.10.0.2.40029: S 400469531:400469531(0) ack 362578966 win 2096 <mss 536,sackOK,timestamp 98576 98671,nop,wscale 1>
+10:56:21.976443 IP 10.10.0.2.40029 > 10.30.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 98673 98576>
+10:56:21.978264 IP 10.10.0.2.40029 > 10.30.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 98673 98576>
+10:56:21.979221 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 101 win 1048 <nop,nop,timestamp 98576 98673>
+10:56:21.988779 IP 10.10.0.2.40029 > 10.30.0.2.9: P 101:201(100) ack 1 win 2920 <nop,nop,timestamp 98674 98576>
+10:56:21.989260 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 201 win 1048 <nop,nop,timestamp 98576 98674>
+10:56:21.995000 IP 10.10.0.2.40029 > 10.30.0.2.9: P 201:301(100) ack 1 win 2920 <nop,nop,timestamp 98674 98576>
+10:56:21.995480 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 301 win 1048 <nop,nop,timestamp 98579 98674>
+10:56:22.005042 IP 10.10.0.2.40029 > 10.30.0.2.9: P 301:401(100) ack 1 win 2920 <nop,nop,timestamp 98675 98579>
+10:56:22.015314 IP 10.10.0.2.40029 > 10.30.0.2.9: P 401:501(100) ack 1 win 2920 <nop,nop,timestamp 98676 98579>
+10:56:22.016907 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 301 win 1048 <nop,nop,timestamp 98580 98674,nop,nop,sack 1 {401:501}>
+10:56:22.027103 IP 10.10.0.2.40029 > 10.30.0.2.9: P 501:601(100) ack 1 win 2920 <nop,nop,timestamp 98678 98580>
+10:56:22.028591 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 301 win 1048 <nop,nop,timestamp 98582 98674,nop,nop,sack 1 {401:601}>
+10:56:22.036799 IP 10.10.0.2.40029 > 10.30.0.2.9: P 601:701(100) ack 1 win 2920 <nop,nop,timestamp 98679 98582>
+10:56:22.038261 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 301 win 1048 <nop,nop,timestamp 98582 98674,nop,nop,sack 1 {401:701}>
+10:56:22.038293 IP 10.10.0.2.40029 > 10.30.0.2.9: P 301:401(100) ack 1 win 2920 <nop,nop,timestamp 98679 98582>
+10:56:22.039557 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 701 win 1048 <nop,nop,timestamp 98582 98679>
+10:56:22.048495 IP 10.10.0.2.40029 > 10.30.0.2.9: P 701:801(100) ack 1 win 2920 <nop,nop,timestamp 98680 98582>
+10:56:22.265257 IP 10.10.0.2.40029 > 10.30.0.2.9: P 701:801(100) ack 1 win 2920 <nop,nop,timestamp 98701 98582>
+10:56:22.266287 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 801 win 1048 <nop,nop,timestamp 98605 98701,nop,nop,sack 1 {701:801}>
+10:56:22.266318 IP 10.10.0.2.40029 > 10.30.0.2.9: . 801:1325(524) ack 1 win 2920 <nop,nop,timestamp 98701 98605>
+10:56:22.266347 IP 10.10.0.2.40029 > 10.30.0.2.9: . 1325:1849(524) ack 1 win 2920 <nop,nop,timestamp 98701 98605>
+10:56:22.267415 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 1325 win 1572 <nop,nop,timestamp 98605 98701>
+10:56:22.267442 IP 10.10.0.2.40029 > 10.30.0.2.9: . 1849:2373(524) ack 1 win 2920 <nop,nop,timestamp 98701 98605>
+10:56:22.267469 IP 10.10.0.2.40029 > 10.30.0.2.9: . 2373:2897(524) ack 1 win 2920 <nop,nop,timestamp 98701 98605>
+10:56:22.267481 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 1849 win 2096 <nop,nop,timestamp 98605 98701>
+10:56:22.267494 IP 10.10.0.2.40029 > 10.30.0.2.9: P 2897:3001(104) ack 1 win 2920 <nop,nop,timestamp 98701 98605>
+10:56:22.268661 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 2897 win 3144 <nop,nop,timestamp 98605 98701>
+10:56:22.268681 IP 10.30.0.2.9 > 10.10.0.2.40029: . ack 3001 win 3144 <nop,nop,timestamp 98605 98701>
+10:56:22.279754 IP 10.10.0.2.40029 > 10.30.0.2.9: F 3001:3001(0) ack 1 win 2920 <nop,nop,timestamp 98703 98605>
+10:56:22.284618 IP 10.30.0.2.9 > 10.10.0.2.40029: F 1:1(0) ack 3002 win 3144 <nop,nop,timestamp 98607 98703>
+10:56:22.284644 IP 10.10.0.2.40029 > 10.30.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 98703 98607>
+\end{Verbatim}
+
+\section{Обычный повтор}
+
+tcpdump на \textbf{c1}. /etc/delay на \textbf{c3}.
+
+\begin{Verbatim}
+c1:~# tcpdump -n -i eth0 tcp
+11:19:34.598644 IP 10.10.0.2.42088 > 10.40.0.2.9: S 640075332:640075332(0) win 5840 <mss 1460,sackOK,timestamp 15746 0,nop,wscale 1>
+11:19:34.800453 IP 10.40.0.2.9 > 10.10.0.2.42088: S 643518773:643518773(0) ack 640075333 win 5792 <mss 1460,sackOK,timestamp 3624 15746,nop,wscale 1>
+11:19:34.800494 IP 10.10.0.2.42088 > 10.40.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 15769 3624>
+11:19:34.801971 IP 10.10.0.2.42088 > 10.40.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 15769 3624>
+11:19:35.007962 IP 10.10.0.2.42088 > 10.40.0.2.9: P 101:201(100) ack 1 win 2920 <nop,nop,timestamp 15790 3624>
+11:19:35.013995 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 101 win 2896 <nop,nop,timestamp 3645 15769>
+11:19:35.210224 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 201 win 2896 <nop,nop,timestamp 3666 15790>
+11:19:35.218656 IP 10.10.0.2.42088 > 10.40.0.2.9: P 201:301(100) ack 1 win 2920 <nop,nop,timestamp 15811 3666>
+11:19:35.420550 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 301 win 2896 <nop,nop,timestamp 3686 15811>
+11:19:35.431367 IP 10.10.0.2.42088 > 10.40.0.2.9: P 301:401(100) ack 1 win 2920 <nop,nop,timestamp 15832 3686>
+11:19:35.637865 IP 10.10.0.2.42088 > 10.40.0.2.9: P 401:501(100) ack 1 win 2920 <nop,nop,timestamp 15853 3686>
+11:19:35.643815 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 401 win 2896 <nop,nop,timestamp 3709 15832>
+11:19:35.840585 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 501 win 2896 <nop,nop,timestamp 3729 15853>
+11:19:35.850014 IP 10.10.0.2.42088 > 10.40.0.2.9: P 501:601(100) ack 1 win 2920 <nop,nop,timestamp 15874 3729>
+11:19:36.057856 IP 10.10.0.2.42088 > 10.40.0.2.9: P 601:701(100) ack 1 win 2920 <nop,nop,timestamp 15895 3729>
+11:19:36.060359 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 601 win 2896 <nop,nop,timestamp 3750 15874>
+11:19:36.260570 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 701 win 2896 <nop,nop,timestamp 3771 15895>
+11:19:36.271307 IP 10.10.0.2.42088 > 10.40.0.2.9: P 701:801(100) ack 1 win 2920 <nop,nop,timestamp 15916 3771>
+11:19:36.477807 IP 10.10.0.2.42088 > 10.40.0.2.9: P 801:901(100) ack 1 win 2920 <nop,nop,timestamp 15937 3771>
+11:19:36.484236 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 801 win 2896 <nop,nop,timestamp 3793 15916>
+11:19:36.680459 IP 10.40.0.2.9 > 10.10.0.2.42088: . ack 901 win 2896 <nop,nop,timestamp 3812 15937>
+\end{Verbatim}
+
+\section{Неудачная попытка соединения с портом}
+
+\begin{Verbatim}
+c2:~# tcpdump -n -i eth0 tcp or icmp
+11:35:06.418147 IP 10.10.0.2.36532 > 10.50.0.2.15: S 2336358280:2336358280(0) win 5840 <mss 1460,sackOK,timestamp 45641 0,nop,wscale 1>
+11:35:06.635388 IP 10.50.0.2.15 > 10.10.0.2.36532: R 0:0(0) ack 2336358281 win 0
+\end{Verbatim}
+
+\section{Опыт с PMTU}
+
+PMTU при попытке соединится с c1 на c6.
+
+\begin{Verbatim}
+c2:~# tcpdump -n -i eth0 tcp or icmp
+11:28:37.170950 IP 10.10.0.2.38034 > 10.50.0.2.9: S 523390004:523390004(0) win 5840 <mss 1460,sackOK,timestamp 6715 0,nop,wscale 1>
+11:28:37.625218 IP 10.50.0.2.9 > 10.10.0.2.38034: S 524787216:524787216(0) ack 523390005 win 5792 <mss 1460,sackOK,timestamp 6739 6715,nop,wscale 1>
+11:28:37.625579 IP 10.10.0.2.38034 > 10.50.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 6763 6739>
+11:28:37.626007 IP 10.10.0.2.38034 > 10.50.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 6763 6739>
+11:28:37.626248 IP 10.10.0.2.38034 > 10.50.0.2.9: P 101:201(100) ack 1 win 2920 <nop,nop,timestamp 6763 6739>
+11:28:37.835136 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 101 win 2896 <nop,nop,timestamp 6761 6763>
+11:28:37.835172 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 201 win 2896 <nop,nop,timestamp 6761 6763>
+11:28:37.835547 IP 10.10.0.2.38034 > 10.50.0.2.9: . 201:1649(1448) ack 1 win 2920 <nop,nop,timestamp 6784 6761>
+11:28:37.835616 IP 10.10.0.1 > 10.10.0.2: ICMP 10.50.0.2 unreachable - need to frag (mtu 1492), length 556
+11:28:37.835636 IP 10.10.0.2.38034 > 10.50.0.2.9: FP 1649:3001(1352) ack 1 win 2920 <nop,nop,timestamp 6784 6761>
+11:28:37.836049 IP 10.10.0.2.38034 > 10.50.0.2.9: . 201:1641(1440) ack 1 win 2920 <nop,nop,timestamp 6784 6761>
+11:28:37.836071 IP 10.10.0.2.38034 > 10.50.0.2.9: . 1641:1649(8) ack 1 win 2920 <nop,nop,timestamp 6784 6761>
+11:28:38.045233 IP 10.20.0.2 > 10.10.0.2: ICMP 10.50.0.2 unreachable - need to frag (mtu 576), length 556
+11:28:38.045271 IP 10.20.0.2 > 10.10.0.2: ICMP 10.50.0.2 unreachable - need to frag (mtu 576), length 556
+11:28:38.045284 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 201 win 2896 <nop,nop,timestamp 6782 6763,nop,nop,sack 1 {1641:1649}>
+11:28:38.045728 IP 10.10.0.2.38034 > 10.50.0.2.9: . 201:725(524) ack 1 win 2920 <nop,nop,timestamp 6805 6761>
+11:28:38.045768 IP 10.10.0.2.38034 > 10.50.0.2.9: . 725:1249(524) ack 1 win 2920 <nop,nop,timestamp 6805 6761>
+11:28:38.045778 IP 10.10.0.2.38034 > 10.50.0.2.9: . 1249:1641(392) ack 1 win 2920 <nop,nop,timestamp 6805 6761>
+11:28:38.045786 IP 10.10.0.2.38034 > 10.50.0.2.9: . 1649:2173(524) ack 1 win 2920 <nop,nop,timestamp 6805 6782>
+11:28:38.255152 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 725 win 3432 <nop,nop,timestamp 6803 6805,nop,nop,sack 1 {1641:1649}>
+11:28:38.255177 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 1249 win 3956 <nop,nop,timestamp 6803 6805,nop,nop,sack 1 {1641:1649}>
+11:28:38.255188 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 1649 win 4480 <nop,nop,timestamp 6803 6805>
+11:28:38.255196 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 2173 win 5004 <nop,nop,timestamp 6803 6805>
+11:28:38.255539 IP 10.10.0.2.38034 > 10.50.0.2.9: . 2173:2697(524) ack 1 win 2920 <nop,nop,timestamp 6826 6803>
+11:28:38.255575 IP 10.10.0.2.38034 > 10.50.0.2.9: FP 2697:3001(304) ack 1 win 2920 <nop,nop,timestamp 6826 6803>
+11:28:38.464926 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 2697 win 5528 <nop,nop,timestamp 6824 6826>
+11:28:38.464935 IP 10.50.0.2.9 > 10.10.0.2.38034: F 1:1(0) ack 3002 win 5528 <nop,nop,timestamp 6824 6826>
+11:28:38.465051 IP 10.10.0.2.38034 > 10.50.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 6847 6824>
+
+c6:~# tcpdump -n -i eth0 tcp or icmp
+11:28:37.411156 IP 10.10.0.2.38034 > 10.50.0.2.9: S 523390004:523390004(0) win 5840 <mss 1460,sackOK,timestamp 6715 0,nop,wscale 1>
+11:28:37.411267 IP 10.50.0.2.9 > 10.10.0.2.38034: S 524787216:524787216(0) ack 523390005 win 5792 <mss 1460,sackOK,timestamp 6739 6715,nop,wscale 1>
+11:28:37.621867 IP 10.10.0.2.38034 > 10.50.0.2.9: . ack 1 win 2920 <nop,nop,timestamp 6763 6739>
+11:28:37.622259 IP 10.10.0.2.38034 > 10.50.0.2.9: P 1:101(100) ack 1 win 2920 <nop,nop,timestamp 6763 6739>
+11:28:37.622288 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 101 win 2896 <nop,nop,timestamp 6761 6763>
+11:28:37.622311 IP 10.10.0.2.38034 > 10.50.0.2.9: P 101:201(100) ack 1 win 2920 <nop,nop,timestamp 6763 6739>
+11:28:37.622317 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 201 win 2896 <nop,nop,timestamp 6761 6763>
+11:28:37.832348 IP 10.10.0.2.38034 > 10.50.0.2.9: . 1641:1649(8) ack 1 win 2920 <nop,nop,timestamp 6784 6761>
+11:28:37.832411 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 201 win 2896 <nop,nop,timestamp 6782 6763,nop,nop,sack 1 {1641:1649}>
+11:28:38.042202 IP 10.10.0.2.38034 > 10.50.0.2.9: . 201:725(524) ack 1 win 2920 <nop,nop,timestamp 6805 6761>
+11:28:38.042222 IP 10.10.0.2.38034 > 10.50.0.2.9: . 725:1249(524) ack 1 win 2920 <nop,nop,timestamp 6805 6761>
+11:28:38.042225 IP 10.10.0.2.38034 > 10.50.0.2.9: . 1249:1641(392) ack 1 win 2920 <nop,nop,timestamp 6805 6761>
+11:28:38.042228 IP 10.10.0.2.38034 > 10.50.0.2.9: . 1649:2173(524) ack 1 win 2920 <nop,nop,timestamp 6805 6782>
+11:28:38.042300 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 725 win 3432 <nop,nop,timestamp 6803 6805,nop,nop,sack 1 {1641:1649}>
+11:28:38.042331 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 1249 win 3956 <nop,nop,timestamp 6803 6805,nop,nop,sack 1 {1641:1649}>
+11:28:38.042342 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 1649 win 4480 <nop,nop,timestamp 6803 6805>
+11:28:38.042352 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 2173 win 5004 <nop,nop,timestamp 6803 6805>
+11:28:38.251712 IP 10.10.0.2.38034 > 10.50.0.2.9: . 2173:2697(524) ack 1 win 2920 <nop,nop,timestamp 6826 6803>
+11:28:38.251732 IP 10.10.0.2.38034 > 10.50.0.2.9: FP 2697:3001(304) ack 1 win 2920 <nop,nop,timestamp 6826 6803>
+11:28:38.251774 IP 10.50.0.2.9 > 10.10.0.2.38034: . ack 2697 win 5528 <nop,nop,timestamp 6824 6826>
+11:28:38.255857 IP 10.50.0.2.9 > 10.10.0.2.38034: F 1:1(0) ack 3002 win 5528 <nop,nop,timestamp 6824 6826>
+11:28:38.460960 IP 10.10.0.2.38034 > 10.50.0.2.9: . ack 2 win 2920 <nop,nop,timestamp 6847 6824>
+\end{Verbatim}
+
+\section{Соединение с неверным портом}
+
+\end{document}

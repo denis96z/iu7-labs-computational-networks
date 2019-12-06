@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+/etc/delay
+
+#!/bin/sh -e
+
+iptables -F
+iptables -F -t nat
+iptables -X
+
+# eth1 connects router to "Internet" via NAT
+
+iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+
+exit 0
