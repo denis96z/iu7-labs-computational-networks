@@ -1,0 +1,10 @@
+mkdir /var/log/openvpn
+update-rc.d openvpn defaults
+update-rc.d quagga defaults
+update-rc.d dnsmasq defaults
+service networking restart
+service quagga restart
+service dnsmasq restart
+service isc-dhcp-server restart
+service dhcp3-server restart
+service openvpn restart

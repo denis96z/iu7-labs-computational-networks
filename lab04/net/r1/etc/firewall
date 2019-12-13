@@ -1,0 +1,10 @@
+#!/bin/sh
+
+LAN=eth0
+INET=eth1
+VPN=tun0
+
+iptables -F
+iptables -F -t nat
+iptables -X
+
