@@ -1,0 +1,186 @@
+\documentclass{article}
+\usepackage[x11names, rgb]{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{amsmath}
+%
+%
+
+\usepackage[active,tightpage]{preview}
+\PreviewEnvironment{tikzpicture}
+\setlength\PreviewBorder{0pt}%
+
+%
+
+\begin{document}
+\pagestyle{empty}
+%
+%
+%
+
+\enlargethispage{100cm}
+% Start of code
+% \begin{tikzpicture}[anchor=mid,>=latex',line join=bevel,]
+\begin{tikzpicture}[>=latex',line join=bevel,]
+  \pgfsetlinewidth{1bp}
+%%
+\pgfsetcolor{black}
+  % Edge: mail2 -- wan
+  \pgfsetcolor{gray}
+  \draw [] (63.41bp,54.168bp) .. controls (72.326bp,63.591bp) and (85.226bp,77.222bp)  .. (95.223bp,87.786bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (112.32bp,61.977bp) node {eth0: 2.3.2.6};
+  % Edge: dnsz1 -- wan
+  \pgfsetcolor{gray}
+  \draw [] (61.373bp,153.23bp) .. controls (70.677bp,143.77bp) and (84.138bp,130.09bp)  .. (94.571bp,119.49bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (110.97bp,145.36bp) node {eth0: 2.2.1.7};
+  % Edge: dns2 -- wan
+  \pgfsetcolor{gray}
+  \draw [] (155.31bp,57.056bp) .. controls (146.81bp,65.829bp) and (134.85bp,78.173bp)  .. (125.38bp,87.946bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (173.34bp,81.501bp) node {eth0: 2.1.2.7};
+  % Edge: mail1 -- lan1
+  \pgfsetcolor{gray}
+  \draw [] (290.11bp,226.96bp) .. controls (285.45bp,214.79bp) and (278.76bp,197.33bp)  .. (273.77bp,184.28bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (246.44bp,214.62bp) node {eth0: 10.0.0.2};
+  % Edge: pc1 -- lan1
+  \pgfsetcolor{gray}
+  \draw [] (323.43bp,138.7bp) .. controls (314.15bp,143.26bp) and (302.17bp,149.13bp)  .. (291.64bp,154.3bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (269.54bp,137.5bp) node {eth0: 10.0.0.10};
+  % Edge: r1 -- lan1
+  \pgfsetcolor{gray}
+  \draw [] (208.01bp,144.18bp) .. controls (217.32bp,147.7bp) and (229.02bp,152.11bp)  .. (239.54bp,156.09bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (188.28bp,159.13bp) node {eth0: 10.0.0.1};
+  % Edge: dns1 -- wan
+  \pgfsetcolor{gray}
+  \draw [] (54.242bp,103.88bp) .. controls (62.298bp,103.84bp) and (71.174bp,103.8bp)  .. (79.436bp,103.76bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (50.339bp,94.818bp) node {eth0: 2.1.1.6};
+  % Edge: dnsz2 -- wan
+  \pgfsetcolor{gray}
+  \draw [] (108.24bp,166.59bp) .. controls (108.65bp,153.27bp) and (109.21bp,135.18bp)  .. (109.63bp,121.81bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (75.934bp,135.2bp) node {eth0: 2.2.2.8};
+  % Edge: r1 -- wan
+  \pgfsetcolor{gray}
+  \draw [] (174.04bp,130.6bp) .. controls (162.8bp,125.85bp) and (147.77bp,119.5bp)  .. (135.12bp,114.15bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (187.58bp,113.37bp) node {eth1: 2.3.1.5};
+  % Edge: dnsr -- wan
+  \pgfsetcolor{gray}
+  \draw [] (111.98bp,35.739bp) .. controls (111.6bp,50.334bp) and (111.06bp,70.931bp)  .. (110.67bp,85.6bp);
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (78.328bp,69.669bp) node {eth0: 2.0.2.2};
+  % Node: mail2
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (52.9bp,43.063bp) node {mail2};
+\end{scope}
+  % Node: wan
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.65,0.16,0.16};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (110.2bp,103.61bp) node {2.0.0.0/8};
+\end{scope}
+  % Node: mail1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (295.64bp,241.42bp) node {mail1};
+\end{scope}
+  % Node: r1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,0.0,1.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (190.72bp,137.65bp) node {r1};
+\end{scope}
+  % Node: dnsr
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (112.45bp,18bp) node {dnsr};
+\end{scope}
+  % Node: dns1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (27bp,104.01bp) node {dns1};
+\end{scope}
+  % Node: pc1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (339.09bp,131.02bp) node {pc1};
+\end{scope}
+  % Node: lan1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.65,0.16,0.16};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (266.93bp,166.43bp) node {10.0.0.0/8};
+\end{scope}
+  % Node: dns2
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (166.08bp,45.935bp) node {dns2};
+\end{scope}
+  % Node: dnsz2
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (107.68bp,184.56bp) node {dnsz2};
+\end{scope}
+  % Node: dnsz1
+\begin{scope}
+  \definecolor{strokecol}{rgb}{0.0,1.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \definecolor{strokecol}{rgb}{0.0,0.0,0.0};
+  \pgfsetstrokecolor{strokecol}
+  \draw (50.406bp,164.37bp) node {dnsz1};
+\end{scope}
+%
+\end{tikzpicture}
+% End of code
+
+%
+\end{document}
+%
+
+
+

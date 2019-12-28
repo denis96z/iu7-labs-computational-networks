@@ -1,0 +1,978 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+u"""
+
+    Спецификация формата файлов с зонами DNS:
+    RFC 1035
+        ftp://ftp.int-evry.fr/pub/in-notes/rfc1035.txt
+    RFC 2308
+        ftp://ftp.int-evry.fr/pub/in-notes/rfc2308.txt
+
+    Спецификация named.conf:
+        http://www.zytrax.com/books/dns/ch7/
+"""
+
+import os
+import sys
+import codecs
+import re
+import unittest
+from StringIO import StringIO
+
+
+class RR(object):
+    """ A Resource Record """
+    def __init__(self, **kwargs):
+        self.name = kwargs.pop('name')
+        self.ttl = kwargs.pop('ttl', '1D')
+        self.klass = kwargs.pop('klass', 'IN')
+        self.type = kwargs.pop('type')
+        self.rdata = kwargs.pop('rdata')
+        assert not kwargs
+
+    def __repr__(self):
+        return 'RR(%(name)s %(ttl)s %(klass)s %(type)s %(rdata)s)' % self.__dict__
+
+    def get_3_tuple(self):
+        return (self.name, self.type, self.rdata)
+
+
+class ZoneFileSyntaxError(Exception):
+    def __init__(self, line_no, comment='unspecified error'):
+        self.line_no = line_no
+        self.comment = comment
+
+    def __str__(self):
+        return 'at line %d: %s' % (self.line_no, self.comment)
+
+
+class MachineDnsInfo(object):
+    """ Информация о настройках DNS на отдельной машине """
+    def __init__(self, zones, hostname='<host>', ip='0.0.0.0'):
+        """ zones: словарь {имя зоны: объект ZoneDnsInfo} """
+        self.zones = zones
+        self.hostname = hostname
+        self.ip = ip
+
+    @property
+    def rstripped_zones(self):
+        return [zone.rstrip('.') for zone in self.zones]
+
+    def whoami(self):
+        """ Словесное описание сервера """
+        zones = list(self.rstripped_zones)
+        if '' in zones:
+            desc = u'Корневой сервер DNS'
+            zones.remove('')
+            if len(zones) > 0:
+                desc += u' и сервер'
+        else:
+            desc = u'NS-сервер'
+
+        if len(zones) == 0:
+            return desc
+
+        domains = sorted([name for name in zones if zone_or_domain(name) == 'domain'])
+        zones = sorted([name for name in zones if zone_or_domain(name) == 'zone'])
+
+        if zones:
+            desc += choose_plural(u' зоны', u' зон', zones) + u' ' + join_with_commas_and_and(zones)
+        if domains:
+            if zones:
+                desc += u", а так же"
+            desc += choose_plural(u' домена', u' доменов', domains) + u' ' + join_with_commas_and_and(domains)
+        return desc
+
+    def resolve_step(self, host):
+        """ Ищет ip-адрес хоста host в своей базе.
+            Возвращает список ip-адресов, возможно пустой.
+        """
+        if not host.endswith('.'):
+            host += '.'
+        return self.all_a().get(host, [])
+
+    def reverse_resolve(self, ip):
+        """ Возвращает список хостов, имеющих указанный ip.
+        """
+        hosts = [
+            host for host, hostip in multivalue_dict_iter(self.all_a())
+            if hostip == ip
+        ]
+        hosts = [host.rstrip('.') for host in hosts]
+        return hosts
+
+    def all_ns(self):
+        """ Возвращает словарь с NS-записями во всех зонах:
+            {'hostname': [nsserver, nsserver, nsserver...], ...}
+        """
+        return unify_dictionaries([z.all_ns() for z in self.zones.values()])
+
+    def all_a(self):
+        """ Возвращает словарь с A-записями во всех зонах:
+            {'hostname': [ip, ip, ip...], ...}
+        """
+        return unify_dictionaries([z.all_a() for z in self.zones.values()])
+
+    def all_mx(self):
+        """ Возвращает словарь с MX-записями во всех зонах:
+            {'hostname': [mx, mx, mx...], ...}
+        """
+        return unify_dictionaries([z.all_mx() for z in self.zones.values()])
+
+
+class ZoneDnsInfo(object):
+    """ Информация о настройках отдельной DNS-зоны на отдельной машине """
+    def __init__(self, rrs):
+        """ rrs: список объектов RR """
+        self.rrs = rrs
+
+    def get_soa(self):
+        """ Извлечение SOA-записи (она должна быть одна).
+            Возвращает кортеж (основной dns-сервер, email админа)
+        """
+        soa_record = [rr for rr in self.rrs if rr.type == 'SOA'][0]
+        fields = soa_record.rdata.split(' ')
+        main_dns, email = fields[0], fields[1]
+        email = email.replace('.', '@', count=1)
+        return (main_dns, email)
+
+    def all_records_by_host_of_type(self, type, rdata_callback=lambda x: x):
+        """ Возвращает словарь
+                {'имя-хоста': ['rdata', ...]}
+            для всех записей заданного типа
+        """
+        rdatas_by_host = {}
+        for rr in self.rrs:
+            if rr.type != type: continue
+            if rr.name not in rdatas_by_host:
+                rdatas_by_host[rr.name] = []
+            rdatas_by_host[rr.name].append(rdata_callback(rr.rdata))
+        return rdatas_by_host
+
+    def all_ns(self):
+        """ возвращает словарь
+                {'имя-зоны': ['имя сервера имен', ...]}
+        """
+        return self.all_records_by_host_of_type('NS')
+
+    def all_a(self):
+        """ Возвращает словарь
+                {'имя-хоста': ['айпишник', ...]}
+        """
+        return self.all_records_by_host_of_type('A')
+
+    def all_mx(self):
+        """ Возвращает словарь
+                {'имя-хоста': ['почтовый хост', ...]}
+        """
+        # выкусываем поле preference
+        rdata_callback = lambda rdata: rdata.split(' ')[1]
+        return self.all_records_by_host_of_type('MX', rdata_callback)
+
+
+class MachineDnsInfoAnnotatedVisitor(object):
+    """ Перебирает различные параметры настроек машины и вызывает методы для обработки этих параметров (on_*).
+        Предполагается, что реальная обработка выполняется в подклассах.
+    """
+    def __init__(self, mach_info=None):
+        """ Объект MachineDnsInfo можно либо указать в конструкторе,
+            либо указывать в методе visit
+        """
+        if mach_info:
+            assert isinstance(mach_info, MachineDnsInfo)
+        self.mach_info = mach_info
+
+    def visit(self, mach_info=None):
+        mach_info = mach_info or getattr(self, 'mach_info', None)
+        assert isinstance(mach_info, MachineDnsInfo)
+        self.on_begin(mach_info)
+
+        # есть ли у сервера A-запись для самого себя?
+        self_hostnames = mach_info.reverse_resolve(mach_info.ip)
+
+        self.on_general_info(mach_info.hostname, self_hostnames, mach_info.ip, mach_info.whoami())
+
+        # каждый хост выводим только один раз
+        already_resolved = set(self_hostnames)
+
+        # ns-записи (сразу вместе с ip серверов имен, если есть)
+        self.on_begin_ns_records()
+        for ns_name, ns_server in multivalue_dict_iter(mach_info.all_ns()):
+            ns_name = ns_name.rstrip('.')
+            ns_server = ns_server.rstrip('.')
+            if ns_name in mach_info.rstripped_zones:
+                # перечисляем только ссылки на подчиненные сервера
+                continue
+            ns_ips = mach_info.resolve_step(ns_server)
+            already_resolved.add(ns_server)
+            self.on_ns_record(ns_name, ns_server, ns_ips)
+        self.on_end_ns_records()
+
+        # a-записи для еще не упомянутых хостов
+        self.on_begin_a_records()
+        for hostname, host_ip in multivalue_dict_iter(mach_info.all_a()):
+            hostname = hostname.rstrip('.')
+            if hostname in already_resolved:
+                continue
+            already_resolved.add(hostname)
+            self.on_a_record(hostname, host_ip)
+        self.on_end_a_records()
+
+        # все mx-записи
+        self.on_begin_mx_records()
+        for hostname, mx in multivalue_dict_iter(mach_info.all_mx()):
+            hostname = hostname.rstrip('.')
+            mx = mx.rstrip('.')
+            self.on_mx_record(hostname, mx)
+        self.on_end_mx_records()
+
+        self.on_end()
+
+    def on_begin(self, mach_info):
+        pass
+
+    def on_general_info(self, vm_hostname, self_hostnames, ip, whoami):
+        pass
+
+    def on_begin_ns_records(self):
+        pass
+
+    def on_ns_record(self, ns_name, ns_server, ns_ips):
+        pass
+
+    def on_end_ns_records(self):
+        pass
+
+    def on_begin_a_records(self):
+        pass
+
+    def on_a_record(self, host, ip):
+        pass
+
+    def on_end_a_records(self):
+        pass
+
+    def on_begin_mx_records(self):
+        pass
+
+    def on_mx_record(self, host, mailhost):
+        pass
+
+    def on_end_mx_records(self):
+        pass
+
+    def on_end(self):
+        pass
+
+
+class InfoPrintingMachineVisitor(MachineDnsInfoAnnotatedVisitor):
+    """ Выводит данные о настройках машины в консоль """
+    def print_info(self, machine_infos):
+        for mach_info in machine_infos:
+            self.visit(mach_info)
+
+    def on_general_info(self, vm_hostname, self_hostnames, ip, whoami):
+        print ''
+        print vm_hostname, '\t', self_hostnames, '\t', ip, '\t', whoami
+
+    def on_ns_record(self, ns_name, ns_server, ns_ips):
+        print '\t', u'NS-сервер %s %s: %s %s' % (
+            u'домена' if zone_or_domain(ns_name) == 'domain' else u'зоны',
+            ns_name, ns_server, ', '.join(ns_ips)
+        )
+
+    def on_a_record(self, host, ip):
+        print '\t', u'%s: %s' % (host, ip)
+
+    def on_mx_record(self, host, mailhost):
+        print '\t', u'MX-запись для %s: %s' % (host, mailhost)
+
+
+class DotGeneratingMachineVisitor(MachineDnsInfoAnnotatedVisitor):
+    """ Составляет описание графа в формате dot по набору машин """
+
+    # пытаться ли расположить вспомогательные узлы с перечнем dns-записей сбоку (а не снизу) от узлов с описанием сервера?
+    # (subgraphing == True <=> constraint=false)
+    subgraphing = True
+
+    def make_dot(self, machine_infos):
+        self.arrows = set()  # тут будут кортежи (ip вышестоящего, ip нижестоящего ns-сервера)
+        self.ip_to_machine_info = {}  # узнаем в процессе, какие ip-адреса есть реально
+        self.subgraph_number = 0
+
+        self.dot = StringIO()
+        print >>self.dot, u"""digraph G {
+        margin=0;
+        node [margin=0];
+        """
+
+        # пишем описания серверов. id вершины графа определяется из ip сервера.
+        for mach_info in machine_infos:
+            # в процессе, помимо записи в self.dot, обновляются
+            # self.arrows и self.ip_to_machine_info
+            self.visit(mach_info)
+
+        # пишем связи
+        for ip_1, ip_2 in self.arrows:
+            if ip_2 not in self.ip_to_machine_info:
+                # внезапно, ссылаемся на несуществующий IP-адрес.
+                # Делаем фейковый узел для него
+                print >>self.dot, u"""%(key)s [label="Несуществующий %(ip)s"];""" % {
+                    'key': self.ip_to_node_key(ip_2),
+                    'ip': ip_2
+                }
+
+            print >>self.dot, u"%s -> %s;" % (
+                self.ip_to_node_key(ip_1),
+                self.ip_to_node_key(ip_2),
+            )
+
+        print >>self.dot, u"}"
+
+        return self.dot.getvalue()
+
+    def ip_to_node_key(self, ip):
+        """ Генерация id вершины графа по IP-адресу """
+        return '_' + ip.replace('.', '_')
+
+    def on_begin(self, mach_info):
+        self.ip_to_machine_info[mach_info.ip] = mach_info
+        if self.subgraphing:
+            # подграф с двумя узлами, основным и вспомогательным. Вводится, чтобы их можно было расположить на одном уровне.
+            print >>self.dot, u"subgraph cluster_%d {" % self.subgraph_number
+            print >>self.dot, u"color=none;"
+            print >>self.dot, u"rank=same;"
+            self.subgraph_number += 1
+
+    def on_general_info(self, vm_hostname, self_hostnames, ip, whoami):
+        self.current_id = self.ip_to_node_key(ip)
+        self.current_ip = ip
+        # описание основного узла сервера
+        print >>self.dot, u"""%(key)s [shape="none", label=<""" % {
+            'key': self.current_id,
+        }
+        print >>self.dot, u"""<TABLE BGCOLOR="#DDDDDD" CELLPADDING="0" CELLSPACING="0" CELLBORDER="0">"""
+        print >>self.dot, u"<TR><TD>%s</TD></TR>" % whoami
+        print >>self.dot, u"<TR><TD>IP: <B>%s</B> (%s)</TD></TR>" % (ip, vm_hostname)
+        print >>self.dot, u"<TR><TD><B>%s</B></TD></TR>" % (', '.join(self_hostnames) or '-')
+        print >>self.dot, u"</TABLE>>];"
+
+        # начало описания вспомогательного узла, в котором будут NS, A и MX-записи
+        print >>self.dot, u"""%(key)s_records [shape="none", label=<""" % {
+            'key': self.current_id,
+        }
+        print >>self.dot, u"""<TABLE BGCOLOR="#FFFFFF" CELLPADDING="0" CELLSPACING="0" CELLBORDER="0">"""
+
+    def on_ns_record(self, ns_name, ns_server, ns_ips):
+        for ns_ip in ns_ips:
+            self.arrows.add((self.current_ip, ns_ip))
+
+        print >>self.dot, u'<TR><TD>NS-сервер %s %s:</TD></TR><TR><TD><B>%s %s</B></TD></TR>' % (
+            u'домена' if zone_or_domain(ns_name) == 'domain' else u'зоны',
+            ns_name, ns_server, ', '.join(ns_ips)
+        )
+
+    def on_a_record(self, host, ip):
+        print >>self.dot, u'<TR><TD>%s: <B>%s</B></TD></TR>' % (host, ip)
+
+    def on_mx_record(self, host, mailhost):
+        print >>self.dot, u'<TR><TD>MX-запись для %s: <B>%s</B></TD></TR>' % (host, mailhost)
+
+    def on_end(self):
+        # конец описания вспомогательного узла
+        print >>self.dot, u"</TABLE>>];"
+        # связь основного и вспомогательного узлов
+        print >>self.dot, u"%(key)s -> %(key)s_records [constraint=%(constraint)s, dir=none];" % {
+            'key': self.current_id,
+            'constraint': str(not bool(self.subgraphing)),
+        }
+        if self.subgraphing:
+            print >>self.dot, u"}"  # конец подграфа
+
+
+# =========== Функции разбора всякой всячины ===========
+
+def zonefile_normalize(zonefile_text):
+    """ Приведение содержимого файла к каноническому виду
+        (одна запись - одна строка, разделитель - один пробел, скобки исключены).
+        Возвращает список строк.
+    """
+    zonefile_text += '\n'
+    # убиваем комментарии
+    zonefile_text = re.sub(r';.*?\n', '\n', zonefile_text)
+    # убиваем переносы внутри скобок и сами скобки
+    chars = []
+    in_parentheses = False
+    for c in zonefile_text:
+        if in_parentheses:
+            if c == ')': in_parentheses = False; continue
+            elif c == '\n': c = ' '
+        else:
+            if c == '(': in_parentheses = True; continue
+        chars.append(c)
+    zonefile_text = ''.join(chars)
+    # схлопываем пробелы
+    zonefile_text = re.sub(r'[\ \t]+', ' ', zonefile_text)
+    # убиваем начальные и концевые пробелы
+    lines = zonefile_text.split('\n')
+    lines = [line.strip() for line in lines]
+    # убиваем пустые строки
+    lines = [line for line in lines if line]
+    return lines
+
+
+def is_klass(s):
+    """ Является ли строка правильным классом BIND? """
+    return s in ['IN', 'CS', 'CH', 'HS']
+
+
+def is_ttl(s):
+    """ Является ли строка корректным описанием TTL в BIND? """
+    if not s[0].isdigit():
+        return False
+    if not s[-1].isdigit():
+        if not s[-1].lower() in ['s', 'm', 'h', 'd', 'w']:
+            return False
+        s = s[:-1]
+    try:
+        int(s)
+    except ValueError:
+        return False
+    return True
+
+
+VALID_RR_TYPES = [
+    'NONE', 'A', 'NS', 'MD', 'MF', 'CNAME', 'SOA', 'MB', 'MG', 'MR', 'NULL',
+    'WKS', 'PTR', 'HINFO', 'MINFO', 'MX', 'TXT', 'RP', 'AFSDB', 'X25', 'ISDN',
+    'RT', 'NSAP', 'NSAP-PTR', 'SIG', 'KEY', 'PX', 'GPOS', 'AAAA', 'LOC', 'NXT',
+    'SRV', 'NAPTR', 'KX', 'CERT', 'A6', 'DNAME', 'OPT', 'APL', 'DS', 'SSHFP',
+    'IPSECKEY', 'RRSIG', 'NSEC', 'DNSKEY', 'DHCID', 'NSEC3', 'NSEC3PARAM',
+    'HIP', 'SPF', 'UNSPEC', 'TKEY', 'TSIG', 'IXFR', 'AXFR', 'MAILB', 'MAILA',
+    'ANY', 'TA', 'DLV',
+]
+
+
+def is_type(s):
+    """ Является ли строка корректным типом записи в BIND? """
+    return s in VALID_RR_TYPES
+
+
+def zonefile_extract_rrs(zone_file_lines, origin='.'):
+    """ Возвращает список RR, определенных в файле зоны.
+        zone_file_lines: список нормализованных строк файла зоны
+        origin: имя зоны
+    """
+    rrs = []
+    if not origin.endswith('.'):
+        origin = origin + '.'
+    default_ttl = '1D'
+    klass = 'IN'
+    name = None
+
+    for i, line in enumerate(zone_file_lines):
+        fields = line.split(' ')
+        assert len(fields) > 0
+        if fields[0] == '$ORIGIN':
+            if len(fields) != 2: raise ZoneFileSyntaxError(i+1)
+            origin = fields[1]
+            continue
+        elif fields[0] == '$TTL':
+            if len(fields) != 2: raise ZoneFileSyntaxError(i+1)
+            default_ttl = fields[1]
+            continue
+
+        # если мы тут, значит строчка содержит RR
+
+        # хост: либо задан (явно или через @), либо наследуется от предыдущей строки
+        if fields[0] == '@':
+            name = origin
+            del fields[0]
+        elif fields[0].endswith('.'):
+            name = fields[0]
+            del fields[0]
+
+        if len(fields) == 0: raise ZoneFileSyntaxError(i+1)
+
+        # далее идет [CLASS] [TTL] или [TTL] [CLASS]
+        # (убить авторов RFC)
+        if is_klass(fields[0]):
+            klass = fields[0]
+            del fields[0]
+        if len(fields) == 0: raise ZoneFileSyntaxError(i+1)
+
+        ttl = None
+        if is_ttl(fields[0]):
+            ttl = fields[0]
+            del fields[0]
+        if len(fields) == 0: raise ZoneFileSyntaxError(i+1)
+
+        if is_klass(fields[0]):
+            klass = fields[0]
+            del fields[0]
+        if len(fields) == 0: raise ZoneFileSyntaxError(i+1)
+
+        # следующий элемент обязан быть типом записи
+        type = fields[0]
+        if not is_type(type):
+            raise ZoneFileSyntaxError(i+1, '%s is not a valid TYPE' % type)
+        del fields[0]
+
+        rdata = ' '.join(fields)
+        rr = RR(name=name, ttl=ttl or default_ttl, type=type, klass=klass, rdata=rdata)
+        rrs.append(rr)
+    return rrs
+
+
+def bindconf_get_master_zones(text):
+    """ Наивный парсер конфигов BIND. Вернее, одного конфига (named.conf.local)
+        Возвращает словарь
+            {'имя_зоны': '/путь/к/файлу/зоны', ...}
+        (причем только с зонами с type=master).
+
+        Не понимает директивы include.
+    """
+    # наивность парсера заключается в том, что плевать он хотел на грамматику.
+    # Но авторы грамматики молодцы, даже при таком варварском подходе как тут
+    # неоднозначности сведены к минимуму.
+    text += '\n'
+    # вырезаем комменты
+    text = re.sub('//.*?\n', '\n', text)
+    text = re.sub('#.*?\n', '\n', text)
+    text = text.replace('/*', '\002')
+    text = text.replace('*/', '\003')
+    text = re.sub('\002(.\n)*?\003', ' ', text)
+    # разбиваем текст по фигурным скобкам и запяточиям, чтобы можно было парсить построчно
+    text = text.replace('{','\n{\n').replace(';', ';\n').replace('}','\n}\n')
+
+    lines = [line.strip() for line in text.split('\n')]
+    lines = [line for line in lines if line]
+
+    zone = None
+    type = None
+    file = None
+
+    zones = {}
+
+    for line in lines:
+        m = re.match('^zone\s+"(.*?)".*', line)
+        if m:
+            zone = m.group(1)
+            type = None
+            file = None
+            continue
+        m = re.match('^type\s+(\w+)\s*;$', line)
+        if m:
+            type = m.group(1)
+            continue
+        m = re.match('^file\s+"(.*?)"\s*;$', line)
+        if m:
+            file = m.group(1)
+            continue
+        if line == '}':
+            if zone is not None and file is not None and type == 'master':
+                zones[zone] = file
+                zone = None
+
+    return zones
+
+
+def get_ip_address_from_interfaces_file(interfaces_text):
+    """ Извлекает ip-адрес машины из содержимого /etc/network/interfaces.
+        Наивно предполагает, что адрес существует и единственен.
+        Возвращает последний адрес, присутствующий в файле, или 127.0.0.1.
+    """
+    lines = interfaces_text.split('\n')
+    address = '127.0.0.1'
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        line = re.sub(r'\s+', ' ', line)
+        parts = line.split(' ')
+        if parts[0] == 'address':
+            address = parts[1]
+    return address
+
+
+def directory_is_fsroot(machine_fsroot_path):
+    """ Проверка, является ли директория path корнем ФС виртуальной машины """
+    return os.path.isdir(os.path.join(path, 'etc'))
+
+
+def machine_has_dns_server(machine_fsroot_path):
+    """ Есть ли на машине настройки bind? """
+    return os.path.isfile(os.path.join(machine_fsroot_path, 'etc', 'bind', 'named.conf.local'))
+
+
+def get_dns_info_for_machine(machine_fsroot_path):
+    """ Возвращает объект MachineDnsInfo с информацией о настройках DNS
+        на машине, путь к ФС которой указан в machine_fsroot_path.
+    """
+    assert machine_has_dns_server(machine_fsroot_path)
+    hostname = os.path.basename(machine_fsroot_path)
+
+    interfaces_file_path = os.path.join(machine_fsroot_path, 'etc', 'network', 'interfaces')
+    interfaces_file = open(interfaces_file_path).read()
+    ip = get_ip_address_from_interfaces_file(interfaces_file)
+
+    named_conf_local_path = os.path.join(machine_fsroot_path, 'etc', 'bind', 'named.conf.local')
+    named_conf_local = open(named_conf_local_path).read()
+
+    zone_files = bindconf_get_master_zones(named_conf_local)
+    zone_infos = {}
+    for zone in zone_files:
+        relative_path = zone_files[zone].lstrip('/')
+        zone_file_path = os.path.join(machine_fsroot_path, relative_path)
+        zone_file = open(zone_file_path).read()
+        zone_file_lines = zonefile_normalize(zone_file)
+        try:
+            rrs = zonefile_extract_rrs(zone_file_lines)
+        except ZoneFileSyntaxError as e:
+            print >>sys.stderr, 'Error: in %s: %s' % (zone_file_path, str(e))
+            rrs = []
+        zoneinfo = ZoneDnsInfo(rrs)
+        zone_infos[zone] = zoneinfo
+    return MachineDnsInfo(zone_infos, hostname, ip)
+
+
+def find_machines_with_bind(directory_path):
+    """ Возвращает список имен каталогов внутри directory,
+        которые содержат ФС виртуальных машин, имеющих настроенный bind
+    """
+    machines = []
+    for entry in os.listdir(directory_path):
+        full_path = os.path.join(directory_path, entry)
+        if machine_has_dns_server(full_path):
+            machines.append(entry)
+    return machines
+
+
+# ============== Вспомогательные функции ==================================
+
+def unify_dictionaries(list_of_dicts):
+    """ Дано: словари вида {'ключ': [список значений]}
+        Нужно объединить их в один, склеив при этом списки для ключей.
+    """
+    result = {}
+    for d in list_of_dicts:
+        for k in d:
+            if k not in result:
+                result[k] = []
+            result[k].extend(d[k])
+    return result
+
+
+def multivalue_dict_iter(multivalue_dict):
+    """ Дано: словари вида {'ключ': [список значений]}
+        Возвращает итератор по парам (ключ, значение).
+    """
+    for k in sorted(multivalue_dict.keys()):
+        for v in multivalue_dict[k]:
+            yield (k, v)
+
+
+def join_with_commas_and_and(lst, conjunction=u'и'):
+    """ Дано: список
+        Нужно объединить элементы в строку в формате "Х, Х, Х и Х"
+    """
+    assert len(lst) > 0
+    last_item = lst[-1]
+    first_items_str = u', '.join(unicode(item) for item in lst[:-1])
+    if len(lst) == 1:
+        return unicode(last_item)
+    else:
+        return first_items_str + u' %s ' % conjunction + unicode(last_item)
+
+
+def choose_plural(singular, plural, sequence):
+    if len(sequence) == 1:
+        return singular
+    return plural
+
+
+def zone_or_domain(name):
+    name = name.rstrip('.')
+    if '.' in name:
+        return 'domain'
+    return 'zone'
+
+
+# ============== Тесты ==================================
+
+class ZonefileParserTests(unittest.TestCase):
+    def test_normalization(self):
+        zone_file = """
+        $TTL    1D
+        xyz.           IN SOA       ns2.nameserver.mynet admin.nameserver.mynet (
+                                               1
+                                               1D
+                                               1H ; comment
+                                               1W
+                                               1D )
+
+                            IN NS        ns1.nameserver.mynet.
+        ; line with comment only
+
+        success.xyz.         IN NS       ns1.success.xyz.
+        ns1.success.xyz.     IN A         2.1.2.7
+        ;it's the end of the file as we know it
+        """
+        norm_lines = zonefile_normalize(zone_file)
+        expected = [
+            "$TTL 1D",
+            "xyz. IN SOA ns2.nameserver.mynet admin.nameserver.mynet 1 1D 1H 1W 1D",
+            "IN NS ns1.nameserver.mynet.",
+            "success.xyz. IN NS ns1.success.xyz.",
+            "ns1.success.xyz. IN A 2.1.2.7"
+        ]
+        self.assertEquals(norm_lines, expected)
+
+    def test_extracting_rrs_1(self):
+        zone_lines = [
+            "$TTL 1D",
+            "xyz. IN SOA ns2.nameserver.mynet admin.nameserver.mynet 1 1D 1H 1W 1D",
+            "IN NS ns1.nameserver.mynet.",
+            "success.xyz. IN 2D NS ns1.success.xyz.",
+            "ns1.success.xyz. 1W IN A 2.1.2.7",
+            "ns2.success.xyz. A 2.1.2.8",
+            "ns3.success.xyz. 1H A 2.1.2.9",
+        ]
+        rrs = zonefile_extract_rrs(zone_lines)
+        extracted_3_tuples = [rr.get_3_tuple() for rr in rrs]
+        expected_3_tuples = [
+            ("xyz.", "SOA", "ns2.nameserver.mynet admin.nameserver.mynet 1 1D 1H 1W 1D"),
+            ("xyz.", "NS", "ns1.nameserver.mynet."),
+            ("success.xyz.", "NS", "ns1.success.xyz."),
+            ("ns1.success.xyz.", "A", "2.1.2.7"),
+            ("ns2.success.xyz.", "A", "2.1.2.8"),
+            ("ns3.success.xyz.", "A", "2.1.2.9"),
+        ]
+
+        self.assertEquals(extracted_3_tuples, expected_3_tuples)
+
+    def test_extracting_rrs_with_origin(self):
+        zone_lines = [
+            "@ A 1.2.3.4",
+            "b. A 1.2.3.5",
+            "A 1.2.3.6",
+            "$ORIGIN c.",
+            "@ A 5.6.7.8",
+            "A 5.6.7.10",
+        ]
+        rrs = zonefile_extract_rrs(zone_lines, origin='bee')
+        extracted_3_tuples = [rr.get_3_tuple() for rr in rrs]
+        expected_3_tuples = [
+            ('bee.', 'A', '1.2.3.4'),
+            ('b.', 'A', '1.2.3.5'),
+            ('b.', 'A', '1.2.3.6'),
+            ('c.', 'A', '5.6.7.8'),
+            ('c.', 'A', '5.6.7.10'),
+        ]
+
+        self.assertEquals(extracted_3_tuples, expected_3_tuples)
+
+    def test_validation(self):
+        zone_lines = [
+            "@ A 1.2.3.4",
+            "b. BLAH 1.2.3.5",
+            "A 1.2.3.6",
+        ]
+        self.assertRaises(ZoneFileSyntaxError, zonefile_extract_rrs, zone_lines)
+
+        zone_lines = [
+            "@ A 1.2.3.4",
+            "b.",
+        ]
+        self.assertRaises(ZoneFileSyntaxError, zonefile_extract_rrs, zone_lines)
+
+        zone_lines = [
+            "@ A 1.2.3.4",
+            "b. IN",
+        ]
+        self.assertRaises(ZoneFileSyntaxError, zonefile_extract_rrs, zone_lines)
+
+        zone_lines = [
+            "@ A 1.2.3.4",
+            "b. IN 1D",
+        ]
+        self.assertRaises(ZoneFileSyntaxError, zonefile_extract_rrs, zone_lines)
+
+        zone_lines = [
+            "@ A 1.2.3.4",
+            "b. 1D",
+        ]
+        self.assertRaises(ZoneFileSyntaxError, zonefile_extract_rrs, zone_lines)
+
+        zone_lines = [
+            "@ A 1.2.3.4",
+            "b. 1D IN",
+        ]
+        self.assertRaises(ZoneFileSyntaxError, zonefile_extract_rrs, zone_lines)
+
+
+class BindConfigParserTests(unittest.TestCase):
+    def test_simple_clean(self):
+        config = """
+            zone "abc" {
+                type master;
+                file "/etc/bind/db.abc";
+            };
+
+            zone "." {
+                type hint;
+                file "/etc/bind/db.root";
+            };
+
+            zone "xyz" {
+                type master;
+                file "/etc/bind/db.xyz";
+            };
+        """
+        zones = bindconf_get_master_zones(config)
+        self.assertEquals(len(zones), 2)
+        self.assertTrue('abc' in zones)
+        self.assertTrue('xyz' in zones)
+        self.assertEquals(zones['abc'], '/etc/bind/db.abc')
+        self.assertEquals(zones['xyz'], '/etc/bind/db.xyz')
+
+    def test_garbled_comments(self):
+        config = """
+            zone "abc" {
+                type master; /* type hint; */file "/etc/bind/db.abc"; };
+
+            /*
+            zone "ijk" {
+                type master; file "abc.def";
+            }
+            */
+            zone "." { type hint; file "/etc/bind/db.root";
+            };
+            zone "gagaga" {
+                file "/dev/null"; type master;
+            };
+
+            /* this is SPARTA */zone "xyz" { type master;
+                //type hint;
+                #type quaka;
+                file "/etc/bind/db.xyz";
+            };
+            zone "bebebe" {
+                file "/dev/urandom"; type bad;
+            };
+        """
+        zones = bindconf_get_master_zones(config)
+        self.assertEquals(set(zones.keys()), set(('abc', 'xyz', 'gagaga')))
+        self.assertEquals(zones['abc'], '/etc/bind/db.abc')
+        self.assertEquals(zones['xyz'], '/etc/bind/db.xyz')
+        self.assertEquals(zones['gagaga'], '/dev/null')
+
+
+class TestVerboseNames(unittest.TestCase):
+    def test_whoami(self):
+        m = MachineDnsInfo({})
+        self.assertEquals(m.whoami(), u'NS-сервер')
+        m = MachineDnsInfo({'.': 1})
+        self.assertEquals(m.whoami(), u'Корневой сервер DNS')
+        m = MachineDnsInfo({'.': 1, 'abc.': 2})
+        self.assertEquals(m.whoami(), u'Корневой сервер DNS и сервер зоны abc')
+        m = MachineDnsInfo({'.': 1, 'abc.': 2, 'xyz.': 3})
+        self.assertEquals(m.whoami(), u'Корневой сервер DNS и сервер зон abc и xyz')
+        m = MachineDnsInfo({'.': 1, 'abc.': 2, 'def': 2.5, 'xyz.': 3})
+        self.assertEquals(m.whoami(), u'Корневой сервер DNS и сервер зон abc, def и xyz')
+        m = MachineDnsInfo({'.': 1, 'abc.': 2, 'def': 2.5, 'xyz.': 3, 'a.b.': 4})
+        self.assertEquals(m.whoami(), u'Корневой сервер DNS и сервер зон abc, def и xyz, а так же домена a.b')
+        m = MachineDnsInfo({'.': 1, 'abc.': 2, 'def': 2.5, 'xyz.': 3, 'a.b.': 4, 'b.b.': 5})
+        self.assertEquals(m.whoami(), u'Корневой сервер DNS и сервер зон abc, def и xyz, а так же доменов a.b и b.b')
+        m = MachineDnsInfo({'abc.': 2, 'def': 2.5, 'xyz.': 3, 'a.b.': 4, 'b.b.': 5})
+        self.assertEquals(m.whoami(), u'NS-сервер зон abc, def и xyz, а так же доменов a.b и b.b')
+        m = MachineDnsInfo({'a.b.': 4, 'b.b.': 5})
+        self.assertEquals(m.whoami(), u'NS-сервер доменов a.b и b.b')
+        m = MachineDnsInfo({'a.b.': 4})
+        self.assertEquals(m.whoami(), u'NS-сервер домена a.b')
+
+
+class InterfacesFileParserTests(unittest.TestCase):
+    def test_simple(self):
+        contents = """
+            auto lo
+            iface lo inet loopback
+
+            auto eth0
+            iface eth0 inet static
+            address 2.1.2.7
+            netmask 255.0.0.0
+        """
+        ip = get_ip_address_from_interfaces_file(contents)
+        self.assertEquals(ip, '2.1.2.7')
+
+
+class TestHelperFunctions(unittest.TestCase):
+    def test_unify_dicts(self):
+        d1 = {'a': [1, 2], 'c': [2, 3]}
+        d2 = {'a': [4], 'd': [5, 3]}
+        d3 = {'c': [99]}
+
+        unified_dict = unify_dictionaries([d1, d2, d3])
+        self.assertEquals(set(unified_dict.keys()), set(('a', 'c', 'd')))
+        self.assertEquals(unified_dict['a'], [1, 2, 4])
+        self.assertEquals(unified_dict['c'], [2, 3, 99])
+        self.assertEquals(unified_dict['d'], [5, 3])
+
+
+    def test_multivalue_dict_iter(self):
+        mvd = {'a': [1, 2], 'b': [3], 'c': [4, 5]}
+        pairs = list(multivalue_dict_iter(mvd))
+        self.assertEquals(pairs, [
+            ('a', 1), ('a', 2), ('b', 3), ('c', 4), ('c', 5)
+        ])
+
+    def test_join_list_with_commas_and_and(self):
+        self.assertEquals(join_with_commas_and_and([1]), u'1')
+        self.assertEquals(join_with_commas_and_and([1, 2]), u'1 и 2')
+        self.assertEquals(join_with_commas_and_and([1, 2, 3]), u'1, 2 и 3')
+        self.assertEquals(join_with_commas_and_and([1, 2, 3], conjunction='and'), u'1, 2 and 3')
+
+    def test_choose_plural(self):
+        self.assertEquals(choose_plural('car', 'cars', [1]), 'car')
+        self.assertEquals(choose_plural('car', 'cars', [1, 2]), 'cars')
+
+    def test_zone_or_domain(self):
+        self.assertEquals(zone_or_domain('abc.'), 'zone')
+        self.assertEquals(zone_or_domain('abc'), 'zone')
+        self.assertEquals(zone_or_domain('def.abc'), 'domain')
+        self.assertEquals(zone_or_domain('def.abc.'), 'domain')
+
+
+def main():
+    def usage():
+        print >>sys.stderr, "Usage:", os.path.basename(sys.argv[0]), "lab_dir gv_file"
+        print >>sys.stderr, "   or ", os.path.basename(sys.argv[0]), "lab_dir stdout"
+
+    if len(sys.argv) != 3:
+        usage()
+        sys.exit(1)
+
+    dns_folder = sys.argv[1]
+    machines_with_bind = find_machines_with_bind(dns_folder)
+
+    mach_infos = [
+        get_dns_info_for_machine(os.path.join(dns_folder, machine))
+        for machine in machines_with_bind
+    ]
+
+
+    # печать сводки
+    if sys.argv[2] != 'stdout':
+        InfoPrintingMachineVisitor().print_info(mach_infos)
+
+    # печать результата в DOT
+    if sys.argv[2] != 'stdout':
+        output_file = codecs.open(sys.argv[2], 'w', 'utf-8')
+    else:
+        output_file = codecs.getwriter('utf-8')(sys.stdout)
+
+    print >>output_file, DotGeneratingMachineVisitor().make_dot(mach_infos)
+
+
+if __name__ == '__main__':
+    main()

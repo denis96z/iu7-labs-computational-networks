@@ -1,0 +1,5 @@
+service networking restart
+update-exim4.conf
+service pdns-recursor start
+service exim4 start
+service popa3d start

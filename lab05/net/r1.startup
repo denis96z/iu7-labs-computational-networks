@@ -1,0 +1,3 @@
+service networking restart
+service pdns-recursor start
+/etc/firewall

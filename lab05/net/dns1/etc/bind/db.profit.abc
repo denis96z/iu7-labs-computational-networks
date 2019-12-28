@@ -1,0 +1,14 @@
+$TTL    1D
+profit.abc.           IN SOA       ns1.profit.abc. petya.profit.abc. (
+                                       1
+                                       1D
+                                       1H
+                                       1W
+                                       1D )
+
+                    IN NS        ns1.profit.abc.
+profit.abc.         IN A         2.3.1.5
+ns1.profit.abc.     IN A         2.1.1.6
+www.profit.abc.     IN A         2.3.1.5
+profit.abc.         IN MX   10   mail.profit.abc.
+mail.profit.abc.    IN A         2.3.1.5

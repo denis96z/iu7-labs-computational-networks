@@ -1,0 +1,12 @@
+$TTL    1D
+xyz.           IN SOA       ns2.nameserver.mynet admin.nameserver.mynet (
+                                       1
+                                       1D
+                                       1H
+                                       1W
+                                       1D )
+
+                    IN NS        ns1.nameserver.mynet.
+
+success.xyz.         IN NS       ns1.success.xyz.
+ns1.success.xyz.     IN A         2.1.2.7

@@ -1,0 +1,2 @@
+. 1D IN NS ns.nameserver.mynet
+ns.nameserver.mynet. 1D IN A 2.0.2.2

@@ -1,0 +1,15 @@
+zone "." {
+    type master;
+    file "/etc/bind/db.root";
+    allow-query { any; };
+};
+
+zone "mynet" {
+    type master;
+    file "/etc/bind/db.mynet";
+    allow-query { any; };
+};
+
+
+
+

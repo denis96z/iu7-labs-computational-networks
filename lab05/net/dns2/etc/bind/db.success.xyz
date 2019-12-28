@@ -1,0 +1,13 @@
+$TTL    1D
+success.xyz.           IN SOA       ns1.success.xyz. masha.success.xyz. (
+                                       1
+                                       1D
+                                       1H
+                                       1W
+                                       1D )
+
+                    IN NS        ns1.success.xyz.
+success.xyz.        IN A         2.3.2.6
+ns1.success.xyz.    IN A         2.1.2.7
+success.xyz.        IN MX   10   mail.success.xyz.
+mail.success.xyz.   IN A         2.3.2.6

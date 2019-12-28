@@ -1,0 +1,16 @@
+#!/bin/sh
+
+LAN=eth0
+INET=eth1
+
+iptables -F
+iptables -F -t nat
+
+# iptables -X
+
+# NAT
+iptables -t nat -A POSTROUTING -o $INET -j MASQUERADE
+
+# SMTP forwarding to mail server
+iptables -t nat -A PREROUTING -p tcp -d 2.3.1.5 --dport 25 -j DNAT --to 10.0.0.2:25
+#

@@ -1,0 +1,4 @@
+service networking restart
+service pdns-recursor start
+update-exim4.conf
+service exim4 start

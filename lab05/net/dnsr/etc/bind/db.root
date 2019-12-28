@@ -1,0 +1,18 @@
+$TTL    1D
+.           IN SOA       ns.nameserver.mynet. admin.nameserver.mynet. (
+                                       1
+                                       4H
+                                       1H
+                                       1W
+                                       1D )
+
+                        IN NS   ns.nameserver.mynet.
+
+abc.                    IN NS   ns1.nameserver.mynet.
+abc.                    IN NS   ns2.nameserver.mynet.
+
+xyz.                    IN NS   ns2.nameserver.mynet.
+
+ns.nameserver.mynet.       IN A         2.0.2.2
+ns2.nameserver.mynet.      IN A         2.2.2.8
+ns1.nameserver.mynet.      IN A         2.2.1.7
